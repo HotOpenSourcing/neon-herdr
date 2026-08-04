@@ -5,7 +5,7 @@ export const HerdrPaneOpenResponseSchema = Schema.Struct({
     pane: Schema.optional(
       Schema.Struct({
         pane_id: Schema.String,
-      }),
+      })
     ),
   }),
 });

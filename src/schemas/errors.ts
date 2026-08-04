@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
 export class AuthUnavailableError extends Schema.TaggedError<AuthUnavailableError>(
-  "AuthUnavailableError",
+  "AuthUnavailableError"
 )("AuthUnavailableError", {
   message: Schema.String,
   action: Schema.String,
@@ -15,7 +15,7 @@ export const OAuthOperationSchema = Schema.Literal(
   "write",
   "refresh",
   "verify",
-  "logout",
+  "logout"
 );
 
 export class OAuthError extends Schema.TaggedError<OAuthError>("OAuthError")(
@@ -25,7 +25,7 @@ export class OAuthError extends Schema.TaggedError<OAuthError>("OAuthError")(
     message: Schema.String,
     action: Schema.String,
     cause: Schema.Defect,
-  },
+  }
 ) {}
 
 export class ConfigError extends Schema.TaggedError<ConfigError>("ConfigError")(
@@ -34,7 +34,7 @@ export class ConfigError extends Schema.TaggedError<ConfigError>("ConfigError")(
     message: Schema.String,
     path: Schema.String,
     cause: Schema.Defect,
-  },
+  }
 ) {}
 
 export class StateError extends Schema.TaggedError<StateError>("StateError")(
@@ -43,7 +43,7 @@ export class StateError extends Schema.TaggedError<StateError>("StateError")(
     message: Schema.String,
     path: Schema.String,
     cause: Schema.Defect,
-  },
+  }
 ) {}
 
 export const NeonErrorCategorySchema = Schema.Literal(
@@ -55,11 +55,11 @@ export const NeonErrorCategorySchema = Schema.Literal(
   "not_found",
   "operation",
   "timeout",
-  "unknown",
+  "unknown"
 );
 
 export class NeonRequestError extends Schema.TaggedError<NeonRequestError>(
-  "NeonRequestError",
+  "NeonRequestError"
 )("NeonRequestError", {
   category: NeonErrorCategorySchema,
   message: Schema.String,
@@ -69,30 +69,29 @@ export class NeonRequestError extends Schema.TaggedError<NeonRequestError>(
 }) {}
 
 export class HerdrCommandError extends Schema.TaggedError<HerdrCommandError>(
-  "HerdrCommandError",
+  "HerdrCommandError"
 )("HerdrCommandError", {
   message: Schema.String,
   cause: Schema.Defect,
 }) {}
 
-export class NeonCliError extends Schema.TaggedError<NeonCliError>("NeonCliError")(
-  "NeonCliError",
-  {
-    message: Schema.String,
-    action: Schema.String,
-    cause: Schema.Defect,
-  },
-) {}
+export class NeonCliError extends Schema.TaggedError<NeonCliError>(
+  "NeonCliError"
+)("NeonCliError", {
+  message: Schema.String,
+  action: Schema.String,
+  cause: Schema.Defect,
+}) {}
 
 export class ConfirmationError extends Schema.TaggedError<ConfirmationError>(
-  "ConfirmationError",
+  "ConfirmationError"
 )("ConfirmationError", {
   message: Schema.String,
   expected: Schema.String,
 }) {}
 
 export class ClipboardError extends Schema.TaggedError<ClipboardError>(
-  "ClipboardError",
+  "ClipboardError"
 )("ClipboardError", {
   message: Schema.String,
   action: Schema.String,
@@ -100,7 +99,7 @@ export class ClipboardError extends Schema.TaggedError<ClipboardError>(
 }) {}
 
 export class ProcessError extends Schema.TaggedError<ProcessError>(
-  "ProcessError",
+  "ProcessError"
 )("ProcessError", {
   executable: Schema.String,
   message: Schema.String,
@@ -108,7 +107,7 @@ export class ProcessError extends Schema.TaggedError<ProcessError>(
 }) {}
 
 export class DashboardHostError extends Schema.TaggedError<DashboardHostError>(
-  "DashboardHostError",
+  "DashboardHostError"
 )("DashboardHostError", {
   message: Schema.String,
   cause: Schema.Defect,

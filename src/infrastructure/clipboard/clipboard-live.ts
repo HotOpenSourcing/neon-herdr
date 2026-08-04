@@ -18,8 +18,8 @@ export const ClipboardLive = Layer.succeed(
                 ? "Ensure pbcopy is available."
                 : "Install wl-clipboard or xclip.",
             cause,
-          }),
-        ),
+          })
+        )
       ),
-  }),
+  })
 );

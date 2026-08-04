@@ -8,7 +8,7 @@ import type { CommandResult } from "../types/process.js";
 const runClipboardProcess = (
   executable: string,
   args: ReadonlyArray<string>,
-  value: string,
+  value: string
 ): Effect.Effect<CommandResult, ProcessError> =>
   Effect.async((resume, signal) => {
     const child = spawn(executable, args, {
@@ -41,14 +41,12 @@ const runClipboardProcess = (
             executable,
             message: `Could not run ${executable}.`,
             cause,
-          }),
-        ),
+          })
+        )
       );
     });
     child.once("close", (code) =>
-      complete(
-        Effect.succeed({ exitCode: code ?? 1, stdout: "", stderr }),
-      ),
+      complete(Effect.succeed({ exitCode: code ?? 1, stdout: "", stderr }))
     );
     child.stdin.end(value);
     signal.addEventListener("abort", terminate, { once: true });
@@ -74,10 +72,10 @@ export const copyText = Effect.fn("copyText")(function* (value: string) {
                   executable: candidate.executable,
                   message: `Clipboard command exited with code ${result.exitCode}.`,
                   cause: result.stderr,
-                }),
-              ),
-        ),
-      ),
-    ),
+                })
+              )
+        )
+      )
+    )
   );
 });

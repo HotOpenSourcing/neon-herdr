@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { Box, Text, useApp, useInput, useStdout } from "ink";
 import { Duration, Effect, Fiber, Schedule } from "effect";
+import { Box, Text, useApp, useInput, useStdout } from "ink";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import { UI_COLORS } from "../../constants/theme.js";
 import {
@@ -50,24 +50,21 @@ const parseComputeSettings = (value: string): ComputeSettings | undefined => {
 export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
   const { exit } = useApp();
   const { stdout } = useStdout();
-  const [state, dispatch] = useReducer(
-    dashboardReducer,
-    initialDashboardState,
-  );
+  const [state, dispatch] = useReducer(dashboardReducer, initialDashboardState);
   const stateRef = useRef(state);
   stateRef.current = state;
   const requestRef = useRef<Fiber.Fiber<void, ApplicationError> | undefined>(
-    undefined,
+    undefined
   );
   const [refreshIntervalSeconds, setRefreshIntervalSeconds] = useState(
-    DEFAULT_REFRESH_INTERVAL_SECONDS,
+    DEFAULT_REFRESH_INTERVAL_SECONDS
   );
 
   const runRequest = useCallback(
     <A,>(
       activity: DashboardActivity,
       effect: DashboardEffect<A>,
-      onSuccess: (value: A) => void,
+      onSuccess: (value: A) => void
     ) => {
       if (requestRef.current !== undefined) {
         effectRunner.runFork(Fiber.interrupt(requestRef.current));
@@ -87,11 +84,11 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
                 });
               }),
             onSuccess: (value) => Effect.sync(() => onSuccess(value)),
-          }),
-        ),
+          })
+        )
       );
     },
-    [effectRunner],
+    [effectRunner]
   );
 
   const filterProjects = useCallback(
@@ -109,27 +106,27 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
                 query,
                 preferredProjectId,
               });
-            }),
+            })
           ),
-          Effect.asVoid,
-        ),
+          Effect.asVoid
+        )
       );
     },
-    [controller, effectRunner],
+    [controller, effectRunner]
   );
 
   const refreshProjects = useCallback(
     (
       preferredProjectId?: string,
       search = stateRef.current.query,
-      activity: DashboardActivity = "refresh-projects",
+      activity: DashboardActivity = "refresh-projects"
     ) => {
       runRequest(activity, controller.refreshProjects(search), (result) => {
         const latestPreferredProjectId =
           preferredProjectId === undefined
             ? undefined
-            : stateRef.current.projects[stateRef.current.projectCursor]?.id ??
-              preferredProjectId;
+            : (stateRef.current.projects[stateRef.current.projectCursor]?.id ??
+              preferredProjectId);
         dispatch({
           type: "PROJECTS_LOADED",
           result,
@@ -137,24 +134,24 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
         });
       });
     },
-    [controller, runRequest],
+    [controller, runRequest]
   );
 
   const refreshDetails = useCallback(
     (
       projectId: string,
       branchId?: string,
-      activity: DashboardActivity = "refresh-project",
+      activity: DashboardActivity = "refresh-project"
     ) => {
       runRequest(
         activity,
         controller.refreshDetails(projectId, branchId),
         (details) => {
           dispatch({ type: "DETAILS_LOADED", details });
-        },
+        }
       );
     },
-    [controller, runRequest],
+    [controller, runRequest]
   );
 
   const loadDetails = useCallback(
@@ -164,30 +161,30 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
         controller.loadDetails(projectId, branchId),
         (details) => {
           dispatch({ type: "DETAILS_LOADED", details });
-        },
+        }
       );
     },
-    [controller, runRequest],
+    [controller, runRequest]
   );
 
   const selectedProject = state.projects[state.projectCursor];
   const selectedBranch = state.details?.branches.find(
-    (branch) => branch.id === state.details?.selectedBranchId,
+    (branch) => branch.id === state.details?.selectedBranchId
   );
   const selectedBranchComputes =
     state.details?.computes.filter(
-      (compute) => compute.branchId === selectedBranch?.id,
+      (compute) => compute.branchId === selectedBranch?.id
     ) ?? [];
   const selectedCompute =
     selectedBranchComputes.find((compute) => compute.type === "read_write") ??
     selectedBranchComputes[0];
   const selectedDatabases =
     state.details?.databases.filter(
-      (database) => database.branchId === selectedBranch?.id,
+      (database) => database.branchId === selectedBranch?.id
     ) ?? [];
   const selectedRoles =
     state.details?.roles.filter(
-      (role) => role.branchId === selectedBranch?.id,
+      (role) => role.branchId === selectedBranch?.id
     ) ?? [];
   const selectedBranchDataLoaded =
     selectedBranch === undefined ||
@@ -202,7 +199,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           refreshIntervalSeconds: controller.loadRefreshInterval(),
           result: controller.loadProjects(),
         },
-        { concurrency: "unbounded" },
+        { concurrency: "unbounded" }
       ),
       ({ saved, refreshIntervalSeconds, result }) => {
         setRefreshIntervalSeconds(refreshIntervalSeconds);
@@ -211,7 +208,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           result,
           preferredProjectId: saved.selectedProjectId,
         });
-      },
+      }
     );
     return () => {
       if (requestRef.current !== undefined) {
@@ -239,7 +236,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
       ) {
         refreshDetails(
           currentState.details.project.id,
-          currentState.details.selectedBranchId,
+          currentState.details.selectedBranchId
         );
       }
     });
@@ -247,8 +244,8 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
     const pollingFiber = effectRunner.runFork(
       Effect.sleep(interval).pipe(
         Effect.andThen(poll.pipe(Effect.repeat(Schedule.spaced(interval)))),
-        Effect.asVoid,
-      ),
+        Effect.asVoid
+      )
     );
     return () => {
       effectRunner.runFork(Fiber.interrupt(pollingFiber));
@@ -285,7 +282,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           .renameBranch(
             state.details.project.id,
             selectedBranch.id,
-            prompt.value.trim(),
+            prompt.value.trim()
           )
           .pipe(Effect.asVoid);
       } else if (prompt.kind === "delete-branch") {
@@ -293,7 +290,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           state.details.project.id,
           selectedBranch.id,
           selectedBranch.name,
-          prompt.value,
+          prompt.value
         );
       } else if (prompt.kind === "reset-branch") {
         if (selectedBranch.parentId === undefined) {
@@ -309,7 +306,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
             selectedBranch.id,
             selectedBranch.parentId,
             selectedBranch.name,
-            prompt.value,
+            prompt.value
           )
           .pipe(Effect.asVoid);
       } else {
@@ -324,7 +321,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
         mutation = controller.updateCompute(
           state.details.project.id,
           selectedCompute.id,
-          settings,
+          settings
         );
       }
       runRequest(
@@ -333,11 +330,11 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           Effect.flatMap(() =>
             controller.loadDetails(
               state.details?.project.id ?? "",
-              selectedBranch.id,
-            ),
-          ),
+              selectedBranch.id
+            )
+          )
         ),
-        (details) => dispatch({ type: "DETAILS_LOADED", details }),
+        (details) => dispatch({ type: "DETAILS_LOADED", details })
       );
     },
     [
@@ -347,7 +344,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
       selectedBranch,
       selectedCompute,
       state.details,
-    ],
+    ]
   );
 
   useInput((input, key) => {
@@ -405,7 +402,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           "authenticate",
           controller.authenticate(
             (url) => dispatch({ type: "AUTHORIZATION_URL", url }),
-            state.query,
+            state.query
           ),
           (result) => {
             dispatch({
@@ -417,7 +414,7 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
               type: "TOAST",
               message: "Neon authentication complete.",
             });
-          },
+          }
         );
       }
       return;
@@ -434,7 +431,11 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
       } else if (input === "/") {
         dispatch({
           type: "OPEN_PROMPT",
-          prompt: { kind: "search", label: "Search projects", value: state.query },
+          prompt: {
+            kind: "search",
+            label: "Search projects",
+            value: state.query,
+          },
         });
       } else if (input === "r") {
         refreshProjects(selectedProject?.id);
@@ -501,17 +502,17 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           .runComputeAction(
             state.details.project.id,
             selectedCompute.id,
-            action,
+            action
           )
           .pipe(
             Effect.flatMap(() =>
               controller.loadDetails(
                 state.details?.project.id ?? "",
-                selectedBranch?.id,
-              ),
-            ),
+                selectedBranch?.id
+              )
+            )
           ),
-        (details) => dispatch({ type: "DETAILS_LOADED", details }),
+        (details) => dispatch({ type: "DETAILS_LOADED", details })
       );
     } else if (input === "R" && selectedCompute !== undefined) {
       runRequest(
@@ -520,17 +521,17 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           .runComputeAction(
             state.details.project.id,
             selectedCompute.id,
-            "restart",
+            "restart"
           )
           .pipe(
             Effect.flatMap(() =>
               controller.loadDetails(
                 state.details?.project.id ?? "",
-                selectedBranch?.id,
-              ),
-            ),
+                selectedBranch?.id
+              )
+            )
           ),
-        (details) => dispatch({ type: "DETAILS_LOADED", details }),
+        (details) => dispatch({ type: "DETAILS_LOADED", details })
       );
     } else if (input === "e" && selectedCompute !== undefined) {
       dispatch({
@@ -554,10 +555,9 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           controller.copyConnection(
             state.details.project.id,
             selectedBranch.id,
-            selectedCompute.id,
+            selectedCompute.id
           ),
-          (masked) =>
-            dispatch({ type: "TOAST", message: `Copied ${masked}` }),
+          (masked) => dispatch({ type: "TOAST", message: `Copied ${masked}` })
         );
       }
     }
@@ -569,11 +569,20 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
   if (state.screen === "help") {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text bold color={UI_COLORS.brand}>Neon Herdr keys</Text>
+        <Text bold color={UI_COLORS.brand}>
+          Neon Herdr keys
+        </Text>
         <Text>j/k or arrows move · Enter opens · r refreshes · / searches</Text>
-        <Text>b back · c create · n rename · d delete · x reset (typed confirmation)</Text>
-        <Text>s start/suspend · R restart · e compute settings · y copy connection</Text>
-        <Text>a {state.authenticated ? "sign out" : "sign in"} · q quit · ? help · any key closes help</Text>
+        <Text>
+          b back · c create · n rename · d delete · x reset (typed confirmation)
+        </Text>
+        <Text>
+          s start/suspend · R restart · e compute settings · y copy connection
+        </Text>
+        <Text>
+          a {state.authenticated ? "sign out" : "sign in"} · q quit · ? help ·
+          any key closes help
+        </Text>
       </Box>
     );
   }
@@ -581,9 +590,16 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
   if (narrow) {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text bold color="yellow">Neon Herdr needs at least {MIN_TERMINAL_COLUMNS} columns.</Text>
-        <Text>Resize the pane. a {state.authenticated ? "signs out" : "signs in"}, q quits, ? shows keyboard help.</Text>
-        {state.error === undefined ? null : <Text color="red">{state.error}</Text>}
+        <Text bold color="yellow">
+          Neon Herdr needs at least {MIN_TERMINAL_COLUMNS} columns.
+        </Text>
+        <Text>
+          Resize the pane. a {state.authenticated ? "signs out" : "signs in"}, q
+          quits, ? shows keyboard help.
+        </Text>
+        {state.error === undefined ? null : (
+          <Text color="red">{state.error}</Text>
+        )}
       </Box>
     );
   }
@@ -591,16 +607,24 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
   return (
     <Box flexDirection="column" paddingX={1}>
       <Box justifyContent="space-between">
-        <Text bold color={UI_COLORS.brand}>Neon</Text>
+        <Text bold color={UI_COLORS.brand}>
+          Neon
+        </Text>
         <Text dimColor>
           {state.activity === undefined
             ? "? help · q quit"
             : DASHBOARD_ACTIVITY_LABELS[state.activity]}
         </Text>
       </Box>
-      {state.warning === undefined ? null : <Text color="yellow">{state.warning}</Text>}
-      {state.error === undefined ? null : <Text color="red">{state.error}</Text>}
-      {state.toast === undefined ? null : <Text color="cyan">{state.toast}</Text>}
+      {state.warning === undefined ? null : (
+        <Text color="yellow">{state.warning}</Text>
+      )}
+      {state.error === undefined ? null : (
+        <Text color="red">{state.error}</Text>
+      )}
+      {state.toast === undefined ? null : (
+        <Text color="cyan">{state.toast}</Text>
+      )}
       {state.prompt === undefined ? null : (
         <Box borderStyle="round" borderColor={UI_COLORS.brand} paddingX={1}>
           <Text>{state.prompt.label}: </Text>
@@ -610,59 +634,125 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
       )}
       {state.screen === "projects" ? (
         <Box flexDirection="column" marginTop={1}>
-          <Text bold color={UI_COLORS.section}>Projects {state.query.length > 0 ? `(search: ${state.query})` : ""}</Text>
+          <Text bold color={UI_COLORS.section}>
+            Projects {state.query.length > 0 ? `(search: ${state.query})` : ""}
+          </Text>
           {state.projects.length === 0 && state.status !== "loading" ? (
             <Text dimColor>No projects found.</Text>
           ) : null}
-          {state.projects.slice(0, MAX_VISIBLE_PROJECTS).map((project, index) => (
-            <Text
-              key={project.id}
-              bold={index === state.projectCursor}
-              color={index === state.projectCursor ? UI_COLORS.selection : "white"}
-            >
-              {index === state.projectCursor ? "› " : "  "}
-              {project.name.padEnd(28)} {project.regionId.padEnd(18)} PG {project.pgVersion} · {formatBytes(project.storageBytes)}
-            </Text>
-          ))}
-          <Text dimColor>{state.organizations.length} organizations · Enter details · / search · r refresh · a {state.authenticated ? "sign out" : "sign in"}</Text>
+          {state.projects
+            .slice(0, MAX_VISIBLE_PROJECTS)
+            .map((project, index) => (
+              <Text
+                key={project.id}
+                bold={index === state.projectCursor}
+                color={
+                  index === state.projectCursor ? UI_COLORS.selection : "white"
+                }
+              >
+                {index === state.projectCursor ? "› " : "  "}
+                {project.name.padEnd(28)} {project.regionId.padEnd(18)} PG{" "}
+                {project.pgVersion} · {formatBytes(project.storageBytes)}
+              </Text>
+            ))}
+          <Text dimColor>
+            {state.organizations.length} organizations · Enter details · /
+            search · r refresh · a{" "}
+            {state.authenticated ? "sign out" : "sign in"}
+          </Text>
         </Box>
       ) : state.details === undefined ? null : (
         <Box flexDirection="column" marginTop={1}>
-          <Text bold color={UI_COLORS.section}>{state.details.project.name}</Text>
-          <Text dimColor>{state.details.project.id} · {state.details.project.regionId} · created {formatDate(state.details.project.createdAt)}</Text>
+          <Text bold color={UI_COLORS.section}>
+            {state.details.project.name}
+          </Text>
+          <Text dimColor>
+            {state.details.project.id} · {state.details.project.regionId} ·
+            created {formatDate(state.details.project.createdAt)}
+          </Text>
           <Box marginTop={1} flexDirection="column">
-            <Text bold color={UI_COLORS.section}>Branches</Text>
-            {state.details.branches.slice(0, MAX_VISIBLE_BRANCHES).map((branch) => (
-              <Text
-                key={branch.id}
-                bold={branch.id === selectedBranch?.id}
-                color={branch.id === selectedBranch?.id ? UI_COLORS.selection : "white"}
-              >
-                {branch.id === selectedBranch?.id ? "› " : "  "}
-                {branch.name.padEnd(28)} {branch.state.padEnd(10)} {branch.isDefault ? "default" : branch.protected ? "protected" : ""}
-              </Text>
-            ))}
+            <Text bold color={UI_COLORS.section}>
+              Branches
+            </Text>
+            {state.details.branches
+              .slice(0, MAX_VISIBLE_BRANCHES)
+              .map((branch) => (
+                <Text
+                  key={branch.id}
+                  bold={branch.id === selectedBranch?.id}
+                  color={
+                    branch.id === selectedBranch?.id
+                      ? UI_COLORS.selection
+                      : "white"
+                  }
+                >
+                  {branch.id === selectedBranch?.id ? "› " : "  "}
+                  {branch.name.padEnd(28)} {branch.state.padEnd(10)}{" "}
+                  {branch.isDefault
+                    ? "default"
+                    : branch.protected
+                      ? "protected"
+                      : ""}
+                </Text>
+              ))}
           </Box>
           {selectedCompute === undefined ? null : (
-            <Text><Text bold color={UI_COLORS.section}>Compute</Text> {selectedCompute.id}: {selectedCompute.state} · {selectedCompute.minCu}–{selectedCompute.maxCu} CU · suspend {selectedCompute.suspendTimeoutSeconds}s</Text>
+            <Text>
+              <Text bold color={UI_COLORS.section}>
+                Compute
+              </Text>{" "}
+              {selectedCompute.id}: {selectedCompute.state} ·{" "}
+              {selectedCompute.minCu}–{selectedCompute.maxCu} CU · suspend{" "}
+              {selectedCompute.suspendTimeoutSeconds}s
+            </Text>
           )}
           {selectedBranchDataLoaded ? (
             <>
-              <Text><Text bold color={UI_COLORS.section}>Databases:</Text> {selectedDatabases.map((database) => `${database.name} (${database.ownerName})`).join(", ") || "—"}</Text>
-              <Text><Text bold color={UI_COLORS.section}>Roles:</Text> {selectedRoles.map((role) => role.name).join(", ") || "—"}</Text>
+              <Text>
+                <Text bold color={UI_COLORS.section}>
+                  Databases:
+                </Text>{" "}
+                {selectedDatabases
+                  .map((database) => `${database.name} (${database.ownerName})`)
+                  .join(", ") || "—"}
+              </Text>
+              <Text>
+                <Text bold color={UI_COLORS.section}>
+                  Roles:
+                </Text>{" "}
+                {selectedRoles.map((role) => role.name).join(", ") || "—"}
+              </Text>
             </>
           ) : (
-            <Text dimColor>Branch databases and roles are not cached · r loads them</Text>
+            <Text dimColor>
+              Branch databases and roles are not cached · r loads them
+            </Text>
           )}
           <Box flexDirection="column" marginTop={1}>
-            <Text bold color={UI_COLORS.section}>Recent operations</Text>
+            <Text bold color={UI_COLORS.section}>
+              Recent operations
+            </Text>
             {state.details.operations.slice(0, 4).map((operation) => (
-              <Text key={operation.id} color={operation.status === "failed" || operation.status === "error" ? "red" : "white"}>
-                {operation.action.padEnd(22)} {operation.status.padEnd(10)} {formatDate(operation.updatedAt)}
+              <Text
+                key={operation.id}
+                color={
+                  operation.status === "failed" || operation.status === "error"
+                    ? "red"
+                    : "white"
+                }
+              >
+                {operation.action.padEnd(22)} {operation.status.padEnd(10)}{" "}
+                {formatDate(operation.updatedAt)}
               </Text>
             ))}
           </Box>
-          <Text dimColor>b back · j/k branch · c/n/d/x branch · s/R/e compute · {selectedCompute === undefined ? "no compute connection" : "y connection"} · a {state.authenticated ? "sign out" : "sign in"}</Text>
+          <Text dimColor>
+            b back · j/k branch · c/n/d/x branch · s/R/e compute ·{" "}
+            {selectedCompute === undefined
+              ? "no compute connection"
+              : "y connection"}{" "}
+            · a {state.authenticated ? "sign out" : "sign in"}
+          </Text>
         </Box>
       )}
     </Box>

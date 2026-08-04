@@ -17,7 +17,7 @@ Project deletion, database and role mutations, SQL editing, and MCP workflows ar
 
 - Herdr 0.7.0 or newer
 - Node.js 22 or newer
-- npm
+- pnpm 11
 - Linux or macOS
 - a Neon account for browser authorization
 - optionally, Neon CLI and `psql` for the `psql` action
@@ -29,8 +29,8 @@ All dependency versions and the lockfile are committed for reproducible installs
 Build and link the current checkout:
 
 ```sh
-npm ci
-npm run build
+pnpm install --frozen-lockfile
+pnpm build
 herdr plugin link .
 ```
 
@@ -171,9 +171,9 @@ Source files follow the repository organization convention: service ports and us
 ## Development checks
 
 ```sh
-npm run typecheck
-npm run build
-npm run check
+pnpm typecheck
+pnpm build
+pnpm check
 ```
 
 Live Neon calls are opt-in: link the plugin, invoke the `authenticate` action, and open the dashboard. No automated test command talks to Neon.

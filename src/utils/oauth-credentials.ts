@@ -5,7 +5,7 @@ import type { OAuthCredentials } from "../types/auth.js";
 export const extendOAuthCredentials = (
   token: TokenEndpointResponse,
   now: number,
-  previousRefreshToken?: string,
+  previousRefreshToken?: string
 ): OAuthCredentials => {
   const refreshToken = token.refresh_token ?? previousRefreshToken;
   return {

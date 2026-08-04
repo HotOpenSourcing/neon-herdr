@@ -1,15 +1,15 @@
 import process from "node:process";
 
-import { render } from "ink";
 import { Clock, Effect } from "effect";
+import { render } from "ink";
 
-import { createDashboardController } from "./controller.js";
 import { StateService } from "../application/ports/state-service.js";
 import { appRuntime } from "../infrastructure/runtime.js";
 import { DashboardHostError } from "../schemas/errors.js";
-import { Dashboard } from "../ui/components/dashboard.js";
 import type { DashboardEffectRunner } from "../types/ui.js";
+import { Dashboard } from "../ui/components/dashboard.js";
 import { displayErrorMessage } from "../utils/display-error-message.js";
+import { createDashboardController } from "./controller.js";
 import { runCommand } from "./run-command.js";
 
 const paneId = process.env.HERDR_PANE_ID;
@@ -28,9 +28,9 @@ const rememberPane =
       })().pipe(
         Effect.catchAll((error) =>
           Effect.logDebug(
-            `Could not remember the dashboard pane: ${displayErrorMessage(error)}`,
-          ),
-        ),
+            `Could not remember the dashboard pane: ${displayErrorMessage(error)}`
+          )
+        )
       );
 
 const controller = createDashboardController();
@@ -42,7 +42,7 @@ const dashboardSession = Effect.acquireUseRelease(
     render(<Dashboard controller={controller} effectRunner={effectRunner} />, {
       exitOnCtrlC: true,
       patchConsole: false,
-    }),
+    })
   ),
   (instance) =>
     Effect.tryPromise({
@@ -56,7 +56,7 @@ const dashboardSession = Effect.acquireUseRelease(
   () =>
     Effect.sync(() => {
       process.stdout.write("\u001B[?25h");
-    }),
+    })
 );
 
 await runCommand(rememberPane.pipe(Effect.andThen(dashboardSession)));

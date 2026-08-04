@@ -7,7 +7,7 @@ const program = Effect.fn("authenticateNeon")(function* () {
   const auth = yield* AuthService;
   yield* auth.login((url) => {
     process.stdout.write(
-      `Opening Neon sign-in in your browser. If it does not open, visit:\n${url}\n`,
+      `Opening Neon sign-in in your browser. If it does not open, visit:\n${url}\n`
     );
   });
   yield* Effect.sync(() => {

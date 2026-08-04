@@ -38,8 +38,8 @@ export const StateLive = Layer.effect(
                   message: "Could not read plugin state.",
                   path,
                   cause,
-                }),
-              ),
+                })
+              )
         ),
         Effect.flatMap((contents) => {
           if (contents === undefined) {
@@ -51,10 +51,10 @@ export const StateLive = Layer.effect(
                 message: "Plugin state is not valid.",
                 path,
                 cause,
-              }),
-            ),
+              })
+            )
           );
-        }),
+        })
       );
 
     const save = <A>(path: string, value: A) => {
@@ -75,23 +75,23 @@ export const StateLive = Layer.effect(
               writeFile(
                 temporaryPath,
                 `${JSON.stringify(value, undefined, 2)}\n`,
-                { encoding: "utf8", mode: 0o600 },
+                { encoding: "utf8", mode: 0o600 }
               ),
             catch: mapError,
-          }),
+          })
         ),
         Effect.andThen(
           Effect.tryPromise({
             try: () => rename(temporaryPath, path),
             catch: mapError,
-          }),
-        ),
+          })
+        )
       );
     };
 
     return StateService.of({
       loadDashboard: load(dashboardPath, DashboardStateSchema).pipe(
-        Effect.map((state) => state ?? {}),
+        Effect.map((state) => state ?? {})
       ),
       saveDashboard: (state) => save(dashboardPath, state),
       loadProjectCache: load(cachePath, ProjectCacheSchema),
@@ -106,5 +106,5 @@ export const StateLive = Layer.effect(
           }),
       }),
     });
-  }),
+  })
 );

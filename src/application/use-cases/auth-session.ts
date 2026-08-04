@@ -8,7 +8,7 @@ import { refreshProjects } from "./load-projects.js";
 
 export const authenticateNeon = Effect.fn("authenticateNeon")(function* (
   onAuthorizationUrl: AuthorizationUrlHandler,
-  search?: string,
+  search?: string
 ) {
   const auth = yield* AuthService;
   yield* auth.login(onAuthorizationUrl);
@@ -29,7 +29,7 @@ export const disconnectNeon = Effect.fn("disconnectNeon")(function* () {
       state.clearProjectCache,
       state.saveDashboard(clearedDashboard),
     ],
-    { discard: true },
+    { discard: true }
   );
   yield* auth.logout;
 });

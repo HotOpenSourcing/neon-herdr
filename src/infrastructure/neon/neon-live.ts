@@ -40,16 +40,16 @@ const readRetrySchedule = Schedule.exponential("250 millis").pipe(
   Schedule.addDelay(([, error]) =>
     error instanceof NeonRequestError && error.retryAfterMs !== undefined
       ? Duration.millis(error.retryAfterMs)
-      : Duration.zero,
+      : Duration.zero
   ),
-  Schedule.intersect(Schedule.recurs(2)),
+  Schedule.intersect(Schedule.recurs(2))
 );
 
 const restoreProjectBranch = wrapRaw(restoreProjectBranchRaw);
 
 const projectDetailsCacheKey = (
   projectId: string,
-  branchId?: string,
+  branchId?: string
 ): ProjectDetailsCacheKey =>
   Data.struct({ projectId, branchId: branchId ?? "" });
 
@@ -66,7 +66,9 @@ const retryAfterMilliseconds = (error: NeonError): number | undefined => {
     return Math.max(0, seconds * 1_000);
   }
   const timestamp = Date.parse(value);
-  return Number.isNaN(timestamp) ? undefined : Math.max(0, timestamp - Date.now());
+  return Number.isNaN(timestamp)
+    ? undefined
+    : Math.max(0, timestamp - Date.now());
 };
 
 const mapNeonError = (error: NeonError): NeonRequestError => {
@@ -131,7 +133,11 @@ const mapNeonError = (error: NeonError): NeonRequestError => {
       retryable: true,
     });
   }
-  if (error instanceof NeonApiError && error.kind === "api" && error.status === 423) {
+  if (
+    error instanceof NeonApiError &&
+    error.kind === "api" &&
+    error.status === 423
+  ) {
     return NeonRequestError.make({
       category: "locked",
       message: error.message,
@@ -156,7 +162,7 @@ const unexpectedNeonError = (cause: unknown): NeonRequestError =>
   });
 
 const fromNeonResult = <A>(
-  operation: (signal: AbortSignal) => Promise<NeonResult<A>>,
+  operation: (signal: AbortSignal) => Promise<NeonResult<A>>
 ) =>
   Effect.tryPromise({
     try: (signal) => operation(signal),
@@ -165,17 +171,16 @@ const fromNeonResult = <A>(
     Effect.flatMap((result) =>
       result.error === undefined
         ? Effect.succeed(result.data)
-        : Effect.fail(mapNeonError(result.error)),
-    ),
+        : Effect.fail(mapNeonError(result.error))
+    )
   );
 
 const retryRead = <A, E>(effect: Effect.Effect<A, E>) =>
   effect.pipe(
     Effect.retry({
       schedule: readRetrySchedule,
-      while: (error) =>
-        error instanceof NeonRequestError && error.retryable,
-    }),
+      while: (error) => error instanceof NeonRequestError && error.retryable,
+    })
   );
 
 const mapProject = (project: Project | ProjectListItem): ProjectSummary => {
@@ -253,7 +258,9 @@ const mapOperation = (operation: Operation): OperationSummary => ({
   id: operation.id,
   action: operation.action,
   status: operation.status,
-  ...(operation.branch_id === undefined ? {} : { branchId: operation.branch_id }),
+  ...(operation.branch_id === undefined
+    ? {}
+    : { branchId: operation.branch_id }),
   ...(operation.endpoint_id === undefined
     ? {}
     : { endpointId: operation.endpoint_id }),
@@ -282,7 +289,7 @@ export const NeonLive = Layer.effect(
     const loadOrganizations = Effect.fn("Neon.loadOrganizations")(function* () {
       const { client } = yield* makeClient();
       const organizations = yield* retryRead(
-        fromNeonResult((signal) => client.user.organizations({ signal })),
+        fromNeonResult((signal) => client.user.organizations({ signal }))
       );
       return organizations.map(mapOrganization);
     });
@@ -293,13 +300,13 @@ export const NeonLive = Layer.effect(
         limit: config.pageSize,
       };
       const projects = yield* retryRead(
-        fromNeonResult(() => client.projects.list(query).all()),
+        fromNeonResult(() => client.projects.list(query).all())
       );
       return projects.map(mapProject);
     });
 
     const loadProjectDetails = Effect.fn("Neon.loadProjectDetails")(function* (
-      key: ProjectDetailsCacheKey,
+      key: ProjectDetailsCacheKey
     ) {
       const projectId = key.projectId;
       const branchId = key.branchId.length === 0 ? undefined : key.branchId;
@@ -307,21 +314,23 @@ export const NeonLive = Layer.effect(
       const overview = yield* Effect.all(
         {
           project: retryRead(
-            fromNeonResult((signal) => client.projects.get(projectId, { signal })),
+            fromNeonResult((signal) =>
+              client.projects.get(projectId, { signal })
+            )
           ),
           branches: retryRead(
-            fromNeonResult(() => client.branches.list(projectId).all()),
+            fromNeonResult(() => client.branches.list(projectId).all())
           ),
           computes: retryRead(
             fromNeonResult((signal) =>
-              client.postgres.endpoints.list(projectId, { signal }),
-            ),
+              client.postgres.endpoints.list(projectId, { signal })
+            )
           ),
           operations: retryRead(
-            fromNeonResult(() => client.operations.list(projectId).all()),
+            fromNeonResult(() => client.operations.list(projectId).all())
           ),
         },
-        { concurrency: "unbounded" },
+        { concurrency: "unbounded" }
       );
       const selectedBranch =
         overview.branches.find((branch) => branch.id === branchId) ??
@@ -337,19 +346,19 @@ export const NeonLive = Layer.effect(
                     client.postgres.databases.list(
                       projectId,
                       selectedBranch.id,
-                      { signal },
-                    ),
-                  ),
+                      { signal }
+                    )
+                  )
                 ),
                 roles: retryRead(
                   fromNeonResult((signal) =>
                     client.postgres.roles.list(projectId, selectedBranch.id, {
                       signal,
-                    }),
-                  ),
+                    })
+                  )
                 ),
               },
-              { concurrency: "unbounded" },
+              { concurrency: "unbounded" }
             );
       const base = {
         project: mapProject(overview.project),
@@ -383,37 +392,37 @@ export const NeonLive = Layer.effect(
     });
 
     const listOrganizations = organizationCache.get(undefined);
-    const refreshOrganizations = organizationCache.refresh(undefined).pipe(
-      Effect.andThen(organizationCache.get(undefined)),
-    );
+    const refreshOrganizations = organizationCache
+      .refresh(undefined)
+      .pipe(Effect.andThen(organizationCache.get(undefined)));
     const listProjects = projectCache.get(undefined);
-    const refreshProjects = projectCache.refresh(undefined).pipe(
-      Effect.andThen(projectCache.get(undefined)),
-    );
+    const refreshProjects = projectCache
+      .refresh(undefined)
+      .pipe(Effect.andThen(projectCache.get(undefined)));
     const getProjectDetails = (projectId: string, branchId?: string) =>
       projectDetailsCache.get(projectDetailsCacheKey(projectId, branchId));
     const refreshProjectDetails = (projectId: string, branchId?: string) => {
       const key = projectDetailsCacheKey(projectId, branchId);
-      return projectDetailsCache.refresh(key).pipe(
-        Effect.andThen(projectDetailsCache.get(key)),
-      );
+      return projectDetailsCache
+        .refresh(key)
+        .pipe(Effect.andThen(projectDetailsCache.get(key)));
     };
     const invalidateProjectData = Effect.all(
       [projectCache.invalidateAll, projectDetailsCache.invalidateAll],
-      { discard: true },
+      { discard: true }
     );
 
     const createBranch = Effect.fn("Neon.createBranch")(function* (
       projectId: string,
-      name: string,
+      name: string
     ) {
       const { client } = yield* makeClient();
       const branch = yield* fromNeonResult((signal) =>
         client.branches.create(
           projectId,
           { name },
-          { signal, waitForReadiness: true },
-        ),
+          { signal, waitForReadiness: true }
+        )
       );
       yield* invalidateProjectData;
       return mapBranch(branch);
@@ -422,11 +431,11 @@ export const NeonLive = Layer.effect(
     const renameBranch = Effect.fn("Neon.renameBranch")(function* (
       projectId: string,
       branchId: string,
-      name: string,
+      name: string
     ) {
       const { client } = yield* makeClient();
       const branch = yield* fromNeonResult((signal) =>
-        client.branches.update(projectId, branchId, { name }, { signal }),
+        client.branches.update(projectId, branchId, { name }, { signal })
       );
       yield* invalidateProjectData;
       return mapBranch(branch);
@@ -434,11 +443,11 @@ export const NeonLive = Layer.effect(
 
     const deleteBranch = Effect.fn("Neon.deleteBranch")(function* (
       projectId: string,
-      branchId: string,
+      branchId: string
     ) {
       const { client } = yield* makeClient();
       yield* fromNeonResult((signal) =>
-        client.branches.delete(projectId, branchId, { signal }),
+        client.branches.delete(projectId, branchId, { signal })
       );
       yield* invalidateProjectData;
     });
@@ -447,7 +456,7 @@ export const NeonLive = Layer.effect(
       projectId: string,
       branchId: string,
       sourceBranchId: string,
-      preserveUnderName: string,
+      preserveUnderName: string
     ) {
       const { client } = yield* makeClient();
       const result = yield* fromNeonResult((signal) =>
@@ -459,7 +468,7 @@ export const NeonLive = Layer.effect(
             preserve_under_name: preserveUnderName,
           },
           signal,
-        }),
+        })
       );
       if (result === undefined) {
         return yield* NeonRequestError.make({
@@ -476,7 +485,7 @@ export const NeonLive = Layer.effect(
     const runComputeAction = Effect.fn("Neon.runComputeAction")(function* (
       projectId: string,
       endpointId: string,
-      action: "start" | "suspend" | "restart",
+      action: "start" | "suspend" | "restart"
     ) {
       const { client } = yield* makeClient();
       yield* fromNeonResult((signal) => {
@@ -505,7 +514,7 @@ export const NeonLive = Layer.effect(
         readonly minCu: number;
         readonly maxCu: number;
         readonly suspendTimeoutSeconds: number;
-      },
+      }
     ) {
       const { client } = yield* makeClient();
       yield* fromNeonResult((signal) =>
@@ -517,8 +526,8 @@ export const NeonLive = Layer.effect(
             autoscaling_limit_max_cu: settings.maxCu,
             suspend_timeout_seconds: settings.suspendTimeoutSeconds,
           },
-          { signal },
-        ),
+          { signal }
+        )
       );
       yield* projectDetailsCache.invalidateAll;
     });
@@ -535,11 +544,11 @@ export const NeonLive = Layer.effect(
                 endpointId,
                 pooled: config.pooledConnections,
               },
-              { signal },
-            ),
-          ),
+              { signal }
+            )
+          )
         );
-      },
+      }
     );
 
     const clearCache = Effect.all(
@@ -548,7 +557,7 @@ export const NeonLive = Layer.effect(
         projectCache.invalidateAll,
         projectDetailsCache.invalidateAll,
       ],
-      { discard: true },
+      { discard: true }
     );
 
     return NeonService.of({
@@ -567,5 +576,5 @@ export const NeonLive = Layer.effect(
       updateCompute,
       getConnectionString,
     });
-  }),
+  })
 );

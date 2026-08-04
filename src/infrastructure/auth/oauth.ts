@@ -30,7 +30,7 @@ import { errorMessage } from "../../utils/error-message.js";
 const oauthFailure = (
   operation: OAuthError["operation"],
   action: string,
-  cause: unknown,
+  cause: unknown
 ): OAuthError =>
   OAuthError.make({
     operation,
@@ -47,13 +47,13 @@ const discover = (settings: OAuthClientSettings) =>
         settings.clientId,
         { token_endpoint_auth_method: "none" },
         oauth.None(),
-        { timeout: OAUTH_DISCOVERY_TIMEOUT_SECONDS },
+        { timeout: OAUTH_DISCOVERY_TIMEOUT_SECONDS }
       ),
     catch: (cause) =>
       oauthFailure(
         "discover",
         "Check the network connection and OAuth host, then try again.",
-        cause,
+        cause
       ),
   });
 
@@ -76,9 +76,9 @@ const acquireLoopbackServer = Effect.async<Server, OAuthError>(
           oauthFailure(
             "callback",
             "Check whether local loopback connections are allowed, then try again.",
-            cause,
-          ),
-        ),
+            cause
+          )
+        )
       );
     };
     const onAbort = () => {
@@ -102,7 +102,7 @@ const acquireLoopbackServer = Effect.async<Server, OAuthError>(
         server.close();
       }
     });
-  },
+  }
 );
 
 const releaseLoopbackServer = (server: Server) =>
@@ -124,7 +124,7 @@ const callbackPort = (server: Server): number | undefined => {
 const writeResponse = (
   response: ServerResponse,
   status: number,
-  body: string,
+  body: string
 ) => {
   if (response.headersSent || response.destroyed) {
     return;
@@ -141,7 +141,7 @@ const waitForAuthorization = (
   configuration: oauth.Configuration,
   redirectUri: string,
   codeVerifier: string,
-  state: string,
+  state: string
 ) =>
   Effect.async<oauth.TokenEndpointResponse, OAuthError>((resume) => {
     let settled = false;
@@ -149,7 +149,7 @@ const waitForAuthorization = (
       server.off("request", onRequest);
     };
     const complete = (
-      effect: Effect.Effect<oauth.TokenEndpointResponse, OAuthError>,
+      effect: Effect.Effect<oauth.TokenEndpointResponse, OAuthError>
     ) => {
       if (settled) {
         return;
@@ -158,10 +158,7 @@ const waitForAuthorization = (
       cleanup();
       resume(effect);
     };
-    const onRequest = (
-      request: IncomingMessage,
-      response: ServerResponse,
-    ) => {
+    const onRequest = (request: IncomingMessage, response: ServerResponse) => {
       const requestUrl = new URL(request.url ?? "/", redirectUri);
       if (requestUrl.pathname !== OAUTH_CALLBACK_PATH) {
         writeResponse(response, 404, "Not found");
@@ -187,20 +184,20 @@ const waitForAuthorization = (
             oauthFailure(
               "authorize",
               "Start Neon sign-in again and complete it in the browser.",
-              cause,
+              cause
             ),
         }).pipe(
           Effect.tap(() =>
             Effect.sync(() => {
               writeResponse(response, 200, OAUTH_SUCCESS_HTML);
-            }),
+            })
           ),
           Effect.tapError(() =>
             Effect.sync(() => {
               writeResponse(response, 400, OAUTH_FAILURE_HTML);
-            }),
-          ),
-        ),
+            })
+          )
+        )
       );
     };
     server.on("request", onRequest);
@@ -212,14 +209,14 @@ const waitForAuthorization = (
         oauthFailure(
           "authorize",
           "Start Neon sign-in again and complete it in the browser.",
-          `Authentication timed out after ${OAUTH_AUTHORIZATION_TIMEOUT_MS / 1_000} seconds.`,
+          `Authentication timed out after ${OAUTH_AUTHORIZATION_TIMEOUT_MS / 1_000} seconds.`
         ),
-    }),
+    })
   );
 
 export const authorizeWithBrowser = (
   settings: OAuthClientSettings,
-  onAuthorizationUrl: AuthorizationUrlHandler,
+  onAuthorizationUrl: AuthorizationUrlHandler
 ) =>
   Effect.gen(function* () {
     const configuration = yield* discover(settings);
@@ -232,7 +229,7 @@ export const authorizeWithBrowser = (
             return yield* oauthFailure(
               "callback",
               "Start Neon sign-in again.",
-              "The OAuth callback server has no TCP port.",
+              "The OAuth callback server has no TCP port."
             );
           }
           const redirectUri = `http://${OAUTH_CALLBACK_HOST}:${port}${OAUTH_CALLBACK_PATH}`;
@@ -241,11 +238,7 @@ export const authorizeWithBrowser = (
           const codeChallenge = yield* Effect.tryPromise({
             try: () => oauth.calculatePKCECodeChallenge(codeVerifier),
             catch: (cause) =>
-              oauthFailure(
-                "authorize",
-                "Start Neon sign-in again.",
-                cause,
-              ),
+              oauthFailure("authorize", "Start Neon sign-in again.", cause),
           });
           const scopes =
             settings.clientId === NEONCTL_OAUTH_CLIENT_ID
@@ -261,11 +254,7 @@ export const authorizeWithBrowser = (
           yield* Effect.try({
             try: () => onAuthorizationUrl(authorizationUrl.href),
             catch: (cause) =>
-              oauthFailure(
-                "authorize",
-                "Start Neon sign-in again.",
-                cause,
-              ),
+              oauthFailure("authorize", "Start Neon sign-in again.", cause),
           });
           yield* Effect.tryPromise({
             try: () => open(authorizationUrl.href),
@@ -273,25 +262,25 @@ export const authorizeWithBrowser = (
           }).pipe(
             Effect.catchAll(() =>
               Effect.logWarning(
-                "Could not open the browser; use the printed authorization URL",
-              ),
-            ),
+                "Could not open the browser; use the printed authorization URL"
+              )
+            )
           );
           return yield* waitForAuthorization(
             server,
             configuration,
             redirectUri,
             codeVerifier,
-            state,
+            state
           );
         }),
-      releaseLoopbackServer,
+      releaseLoopbackServer
     );
   });
 
 export const refreshOAuthToken = (
   settings: OAuthClientSettings,
-  refreshToken: string,
+  refreshToken: string
 ) =>
   Effect.gen(function* () {
     const configuration = yield* discover(settings);
@@ -305,7 +294,8 @@ export const refreshOAuthToken = (
             cause.error === "invalid_grant"
               ? "The stored Neon OAuth session expired or was revoked."
               : errorMessage(cause),
-          action: "Press a in the dashboard, or run the Neon sign-in action again.",
+          action:
+            "Press a in the dashboard, or run the Neon sign-in action again.",
           cause,
         }),
     });

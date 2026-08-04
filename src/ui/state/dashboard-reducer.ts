@@ -1,7 +1,4 @@
-import type {
-  DashboardAction,
-  DashboardViewState,
-} from "../../types/ui.js";
+import type { DashboardAction, DashboardViewState } from "../../types/ui.js";
 
 export const initialDashboardState: DashboardViewState = {
   screen: "projects",
@@ -19,7 +16,7 @@ export const initialDashboardState: DashboardViewState = {
 
 export const dashboardReducer = (
   state: DashboardViewState,
-  action: DashboardAction,
+  action: DashboardAction
 ): DashboardViewState => {
   switch (action.type) {
     case "LOADING":
@@ -35,7 +32,7 @@ export const dashboardReducer = (
         action.preferredProjectId === undefined
           ? -1
           : action.result.projects.findIndex(
-              (project) => project.id === action.preferredProjectId,
+              (project) => project.id === action.preferredProjectId
             );
       return {
         ...state,
@@ -48,7 +45,10 @@ export const dashboardReducer = (
         projectCursor:
           preferredCursor >= 0
             ? preferredCursor
-            : Math.min(state.projectCursor, Math.max(0, action.result.projects.length - 1)),
+            : Math.min(
+                state.projectCursor,
+                Math.max(0, action.result.projects.length - 1)
+              ),
         stale: action.result.stale,
         authenticated: action.result.authenticated ?? state.authenticated,
         warning: action.result.warning,
@@ -60,7 +60,7 @@ export const dashboardReducer = (
         action.preferredProjectId === undefined
           ? -1
           : action.projects.findIndex(
-              (project) => project.id === action.preferredProjectId,
+              (project) => project.id === action.preferredProjectId
             );
       return {
         ...state,
@@ -78,7 +78,7 @@ export const dashboardReducer = (
       const selectedBranchId =
         previousDetails?.selectedBranchId !== undefined &&
         action.details.branches.some(
-          (branch) => branch.id === previousDetails.selectedBranchId,
+          (branch) => branch.id === previousDetails.selectedBranchId
         )
           ? previousDetails.selectedBranchId
           : loadedBranchId;
@@ -86,13 +86,13 @@ export const dashboardReducer = (
         previousDetails === undefined || loadedBranchId === undefined
           ? []
           : previousDetails.databases.filter(
-              (database) => database.branchId !== loadedBranchId,
+              (database) => database.branchId !== loadedBranchId
             );
       const cachedRoles =
         previousDetails === undefined || loadedBranchId === undefined
           ? []
           : previousDetails.roles.filter(
-              (role) => role.branchId !== loadedBranchId,
+              (role) => role.branchId !== loadedBranchId
             );
       const loadedBranchIds =
         loadedBranchId === undefined
@@ -131,7 +131,10 @@ export const dashboardReducer = (
         ...state,
         projectCursor: Math.max(
           0,
-          Math.min(state.projects.length - 1, state.projectCursor + action.delta),
+          Math.min(
+            state.projects.length - 1,
+            state.projectCursor + action.delta
+          )
         ),
       };
     case "MOVE_BRANCH": {
@@ -141,15 +144,12 @@ export const dashboardReducer = (
       const currentIndex = Math.max(
         0,
         state.details.branches.findIndex(
-          (branch) => branch.id === state.details?.selectedBranchId,
-        ),
+          (branch) => branch.id === state.details?.selectedBranchId
+        )
       );
       const nextIndex = Math.max(
         0,
-        Math.min(
-          state.details.branches.length - 1,
-          currentIndex + action.delta,
-        ),
+        Math.min(state.details.branches.length - 1, currentIndex + action.delta)
       );
       const nextBranch = state.details.branches[nextIndex];
       return nextBranch === undefined
@@ -163,11 +163,19 @@ export const dashboardReducer = (
           };
     }
     case "SHOW_PROJECTS":
-      return { ...state, screen: "projects", error: undefined, toast: undefined };
+      return {
+        ...state,
+        screen: "projects",
+        error: undefined,
+        toast: undefined,
+      };
     case "SHOW_HELP":
       return { ...state, screen: "help" };
     case "CLOSE_HELP":
-      return { ...state, screen: state.details === undefined ? "projects" : "details" };
+      return {
+        ...state,
+        screen: state.details === undefined ? "projects" : "details",
+      };
     case "OPEN_PROMPT":
       return { ...state, prompt: action.prompt, toast: undefined };
     case "UPDATE_PROMPT":

@@ -7,7 +7,6 @@ import type { NeonService } from "../application/ports/neon-service.js";
 import type { StateService } from "../application/ports/state-service.js";
 import type { AuthorizationUrlHandler } from "./auth.js";
 import type { ApplicationError } from "./errors.js";
-import type { DashboardState as PersistedDashboardState } from "./state.js";
 import type {
   ComputeAction,
   ComputeSettings,
@@ -16,6 +15,7 @@ import type {
   ProjectListResult,
   ProjectSummary,
 } from "./neon.js";
+import type { DashboardState as PersistedDashboardState } from "./state.js";
 
 export type DashboardScreen = "projects" | "details" | "help";
 export type DashboardStatus = "loading" | "ready" | "error";
@@ -116,71 +116,71 @@ export type DashboardAction =
 export interface DashboardController {
   readonly authenticate: (
     onAuthorizationUrl: AuthorizationUrlHandler,
-    search?: string,
+    search?: string
   ) => DashboardEffect<ProjectListResult>;
   readonly disconnect: () => DashboardEffect<void>;
   readonly loadRefreshInterval: () => DashboardEffect<number>;
   readonly loadState: () => DashboardEffect<PersistedDashboardState>;
   readonly loadProjects: (
-    search?: string,
+    search?: string
   ) => DashboardEffect<ProjectListResult>;
   readonly refreshProjects: (
-    search?: string,
+    search?: string
   ) => DashboardEffect<ProjectListResult>;
   readonly searchProjects: (
     projects: ReadonlyArray<ProjectSummary>,
-    query: string,
+    query: string
   ) => DashboardEffect<ReadonlyArray<ProjectSummary>>;
   readonly loadDetails: (
     projectId: string,
-    branchId?: string,
+    branchId?: string
   ) => DashboardEffect<ProjectDetails>;
   readonly refreshDetails: (
     projectId: string,
-    branchId?: string,
+    branchId?: string
   ) => DashboardEffect<ProjectDetails>;
   readonly createBranch: (
     projectId: string,
-    name: string,
+    name: string
   ) => DashboardEffect<unknown>;
   readonly renameBranch: (
     projectId: string,
     branchId: string,
-    name: string,
+    name: string
   ) => DashboardEffect<unknown>;
   readonly deleteBranch: (
     projectId: string,
     branchId: string,
     branchName: string,
-    confirmation: string,
+    confirmation: string
   ) => DashboardEffect<void>;
   readonly resetBranch: (
     projectId: string,
     branchId: string,
     sourceBranchId: string,
     branchName: string,
-    confirmation: string,
+    confirmation: string
   ) => DashboardEffect<unknown>;
   readonly runComputeAction: (
     projectId: string,
     endpointId: string,
-    action: ComputeAction,
+    action: ComputeAction
   ) => DashboardEffect<void>;
   readonly updateCompute: (
     projectId: string,
     endpointId: string,
-    settings: ComputeSettings,
+    settings: ComputeSettings
   ) => DashboardEffect<void>;
   readonly copyConnection: (
     projectId: string,
     branchId: string,
-    endpointId: string,
+    endpointId: string
   ) => DashboardEffect<string>;
 }
 
 export interface DashboardEffectRunner {
   readonly runFork: <A>(
-    effect: DashboardEffect<A>,
+    effect: DashboardEffect<A>
   ) => Fiber.Fiber<A, ApplicationError>;
 }
 

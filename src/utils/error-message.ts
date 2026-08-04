@@ -2,14 +2,16 @@ import { Cause, Option, Runtime } from "effect";
 
 const unwrapFiberFailure = (cause: unknown): unknown => {
   if (Cause.isCause(cause)) {
-    return Option.getOrUndefined(Cause.failureOption(cause)) ?? Cause.pretty(cause);
+    return (
+      Option.getOrUndefined(Cause.failureOption(cause)) ?? Cause.pretty(cause)
+    );
   }
   if (!Runtime.isFiberFailure(cause)) {
     return cause;
   }
   return (
     Option.getOrUndefined(
-      Cause.failureOption(cause[Runtime.FiberFailureCauseId]),
+      Cause.failureOption(cause[Runtime.FiberFailureCauseId])
     ) ?? cause
   );
 };

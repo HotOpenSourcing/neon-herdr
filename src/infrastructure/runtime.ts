@@ -12,7 +12,7 @@ const IndependentLayers = Layer.mergeAll(
   ConfigLive,
   ClipboardLive,
   HerdrLive,
-  NeonCliLive,
+  NeonCliLive
 );
 
 const AuthLayer = AuthLive.pipe(Layer.provide(IndependentLayers));
@@ -24,7 +24,7 @@ export const AppLayer = Layer.mergeAll(
   IndependentLayers,
   AuthLayer,
   StateLayer,
-  NeonLayer,
+  NeonLayer
 );
 
 export type AppServices = Layer.Layer.Success<typeof AppLayer>;

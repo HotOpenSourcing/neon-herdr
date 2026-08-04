@@ -5,7 +5,7 @@ import { NeonService } from "../ports/neon-service.js";
 
 export const createBranch = Effect.fn("createBranch")(function* (
   projectId: string,
-  name: string,
+  name: string
 ) {
   const neon = yield* NeonService;
   return yield* neon.createBranch(projectId, name);
@@ -14,7 +14,7 @@ export const createBranch = Effect.fn("createBranch")(function* (
 export const renameBranch = Effect.fn("renameBranch")(function* (
   projectId: string,
   branchId: string,
-  name: string,
+  name: string
 ) {
   const neon = yield* NeonService;
   return yield* neon.renameBranch(projectId, branchId, name);
@@ -24,7 +24,7 @@ export const deleteBranch = Effect.fn("deleteBranch")(function* (
   projectId: string,
   branchId: string,
   branchName: string,
-  confirmation: string,
+  confirmation: string
 ) {
   if (confirmation !== branchName) {
     return yield* ConfirmationError.make({
@@ -41,7 +41,7 @@ export const resetBranch = Effect.fn("resetBranch")(function* (
   branchId: string,
   sourceBranchId: string,
   branchName: string,
-  confirmation: string,
+  confirmation: string
 ) {
   if (confirmation !== branchName) {
     return yield* ConfirmationError.make({
@@ -56,6 +56,6 @@ export const resetBranch = Effect.fn("resetBranch")(function* (
     projectId,
     branchId,
     sourceBranchId,
-    `${branchName}-before-reset-${timestamp}`,
+    `${branchName}-before-reset-${timestamp}`
   );
 });

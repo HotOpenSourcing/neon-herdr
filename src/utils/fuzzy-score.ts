@@ -19,10 +19,7 @@ const editDistance = (left: string, right: string): number => {
       const deletion = (previous.get(rightIndex) ?? rightIndex) + 1;
       const substitution =
         (previous.get(rightIndex - 1) ?? rightIndex - 1) + substitutionCost;
-      current.set(
-        rightIndex,
-        Math.min(insertion, deletion, substitution),
-      );
+      current.set(rightIndex, Math.min(insertion, deletion, substitution));
     }
     previous = current;
   }
@@ -31,7 +28,7 @@ const editDistance = (left: string, right: string): number => {
 
 const subsequenceScore = (
   query: string,
-  candidate: string,
+  candidate: string
 ): number | undefined => {
   let score = 0;
   let previousIndex = -1;
@@ -50,15 +47,12 @@ const subsequenceScore = (
     }
     previousIndex = index;
   }
-  return Math.max(
-    0,
-    10 + score + (candidate.length - query.length) * 0.05,
-  );
+  return Math.max(0, 10 + score + (candidate.length - query.length) * 0.05);
 };
 
 export const fuzzyScore = (
   queryValue: string,
-  candidateValue: string,
+  candidateValue: string
 ): number | undefined => {
   const query = normalizeSearchValue(queryValue);
   const candidate = normalizeSearchValue(candidateValue);
@@ -82,7 +76,7 @@ export const fuzzyScore = (
   const words = candidate.split(/[^\p{Letter}\p{Number}]+/u).filter(Boolean);
   const distance = words.reduce(
     (best, word) => Math.min(best, editDistance(query, word)),
-    Number.POSITIVE_INFINITY,
+    Number.POSITIVE_INFINITY
   );
   const tolerance = query.length < 4 ? 1 : Math.ceil(query.length * 0.3);
   return distance <= tolerance ? 20 + distance * 3 : undefined;

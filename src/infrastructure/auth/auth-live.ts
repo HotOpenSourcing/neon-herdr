@@ -14,10 +14,7 @@ import {
   OAuthCredentialsSchema,
   OAuthCurrentUserSchema,
 } from "../../schemas/auth.js";
-import {
-  AuthUnavailableError,
-  OAuthError,
-} from "../../schemas/errors.js";
+import { AuthUnavailableError, OAuthError } from "../../schemas/errors.js";
 import type {
   AuthResolution,
   OAuthClientSettings,
@@ -38,7 +35,7 @@ const authResolution = (credentials: OAuthCredentials): AuthResolution => ({
 const storageError = (
   operation: "read" | "write" | "logout",
   path: string,
-  cause: unknown,
+  cause: unknown
 ) =>
   OAuthError.make({
     operation,
@@ -53,7 +50,7 @@ export const AuthLive = Layer.effect(
     const configService = yield* ConfigService;
     const credentialsPath = join(
       configService.paths.configDir,
-      OAUTH_CREDENTIALS_FILE,
+      OAUTH_CREDENTIALS_FILE
     );
     const credentialsTemporaryPath = `${credentialsPath}.${process.pid}.tmp`;
     const authSemaphore = yield* Effect.makeSemaphore(1);
@@ -63,12 +60,10 @@ export const AuthLive = Layer.effect(
     }).pipe(Effect.catchAll(() => Effect.void));
 
     const loadSettings = configService.load.pipe(
-      Effect.map(
-        (config): OAuthClientSettings => ({
-          oauthHost: config.oauthHost,
-          clientId: config.oauthClientId,
-        }),
-      ),
+      Effect.map((config): OAuthClientSettings => ({
+        oauthHost: config.oauthHost,
+        clientId: config.oauthClientId,
+      }))
     );
 
     const readCredentials = Effect.tryPromise({
@@ -78,20 +73,20 @@ export const AuthLive = Layer.effect(
       Effect.catchAll((cause) =>
         isMissingFile(cause)
           ? Effect.succeed(undefined)
-          : Effect.fail(storageError("read", credentialsPath, cause)),
+          : Effect.fail(storageError("read", credentialsPath, cause))
       ),
       Effect.flatMap((contents) => {
         if (contents === undefined) {
           return Effect.succeed(undefined);
         }
-        return Schema.decodeUnknown(
-          Schema.parseJson(OAuthCredentialsSchema),
-        )(contents).pipe(
+        return Schema.decodeUnknown(Schema.parseJson(OAuthCredentialsSchema))(
+          contents
+        ).pipe(
           Effect.mapError((cause) =>
-            storageError("read", credentialsPath, cause),
-          ),
+            storageError("read", credentialsPath, cause)
+          )
         );
-      }),
+      })
     );
 
     const writeCredentials = (credentials: OAuthCredentials) =>
@@ -100,25 +95,23 @@ export const AuthLive = Layer.effect(
           writeFile(
             credentialsTemporaryPath,
             `${JSON.stringify(credentials, undefined, 2)}\n`,
-            { mode: 0o600 },
+            { mode: 0o600 }
           ),
         catch: (cause) => storageError("write", credentialsPath, cause),
       }).pipe(
         Effect.andThen(
           Effect.tryPromise({
             try: () => chmod(credentialsTemporaryPath, 0o600),
-            catch: (cause) =>
-              storageError("write", credentialsPath, cause),
-          }),
+            catch: (cause) => storageError("write", credentialsPath, cause),
+          })
         ),
         Effect.andThen(
           Effect.tryPromise({
             try: () => rename(credentialsTemporaryPath, credentialsPath),
-            catch: (cause) =>
-              storageError("write", credentialsPath, cause),
-          }),
+            catch: (cause) => storageError("write", credentialsPath, cause),
+          })
         ),
-        Effect.ensuring(removeTemporaryCredentials),
+        Effect.ensuring(removeTemporaryCredentials)
       );
 
     const verifyAccessToken = (accessToken: string) =>
@@ -144,7 +137,8 @@ export const AuthLive = Layer.effect(
                   OAuthError.make({
                     operation: "verify",
                     message: "Neon returned an unreadable user response.",
-                    action: "Sign in again. If this persists, contact Neon support.",
+                    action:
+                      "Sign in again. If this persists, contact Neon support.",
                     cause,
                   }),
               })
@@ -154,8 +148,8 @@ export const AuthLive = Layer.effect(
                   message: `Neon rejected the OAuth token with HTTP ${response.status}.`,
                   action: "Run the Neon sign-in action again.",
                   cause: `HTTP ${response.status}`,
-                }),
-              ),
+                })
+              )
         ),
         Effect.flatMap(Schema.decodeUnknown(OAuthCurrentUserSchema)),
         Effect.mapError((cause) =>
@@ -164,39 +158,40 @@ export const AuthLive = Layer.effect(
             : OAuthError.make({
                 operation: "verify",
                 message: "Neon returned an invalid user response.",
-                action: "Sign in again. If this persists, contact Neon support.",
+                action:
+                  "Sign in again. If this persists, contact Neon support.",
                 cause,
-              }),
+              })
         ),
-        Effect.map((user) => user.id),
+        Effect.map((user) => user.id)
       );
 
     const makeCredentials = Effect.fn("Auth.makeCredentials")(function* (
       token: Parameters<typeof extendOAuthCredentials>[0],
-      previousRefreshToken?: string,
+      previousRefreshToken?: string
     ) {
       const now = yield* Clock.currentTimeMillis;
       return extendOAuthCredentials(token, now, previousRefreshToken);
     });
 
-    const persistLoginToken = Effect.fn("Auth.persistLoginToken")(
-      function* (token: Parameters<typeof extendOAuthCredentials>[0]) {
-        const credentials = yield* makeCredentials(token);
-        const userId = yield* verifyAccessToken(credentials.access_token);
-        const verifiedCredentials = { ...credentials, user_id: userId };
-        yield* writeCredentials(verifiedCredentials);
-        return verifiedCredentials;
-      },
-    );
+    const persistLoginToken = Effect.fn("Auth.persistLoginToken")(function* (
+      token: Parameters<typeof extendOAuthCredentials>[0]
+    ) {
+      const credentials = yield* makeCredentials(token);
+      const userId = yield* verifyAccessToken(credentials.access_token);
+      const verifiedCredentials = { ...credentials, user_id: userId };
+      yield* writeCredentials(verifiedCredentials);
+      return verifiedCredentials;
+    });
 
     const persistRefreshedToken = Effect.fn("Auth.persistRefreshedToken")(
       function* (
         token: Parameters<typeof extendOAuthCredentials>[0],
-        previousCredentials: OAuthCredentials,
+        previousCredentials: OAuthCredentials
       ) {
         const credentials = yield* makeCredentials(
           token,
-          previousCredentials.refresh_token,
+          previousCredentials.refresh_token
         );
         const refreshedCredentials =
           previousCredentials.user_id === undefined
@@ -204,7 +199,7 @@ export const AuthLive = Layer.effect(
             : { ...credentials, user_id: previousCredentials.user_id };
         yield* writeCredentials(refreshedCredentials);
         return refreshedCredentials;
-      },
+      }
     );
 
     const resolveCredentials = Effect.fn("Auth.resolve")(function* () {
@@ -230,19 +225,16 @@ export const AuthLive = Layer.effect(
       }
       const token = yield* refreshOAuthToken(
         settings,
-        credentials.refresh_token,
+        credentials.refresh_token
       );
-      const refreshed = yield* persistRefreshedToken(
-        token,
-        credentials,
-      );
+      const refreshed = yield* persistRefreshedToken(token, credentials);
       return authResolution(refreshed);
     });
 
     const resolve = authSemaphore.withPermits(1)(resolveCredentials());
 
     const loginCredentials = Effect.fn("Auth.login")(function* (
-      onAuthorizationUrl: (url: string) => void,
+      onAuthorizationUrl: (url: string) => void
     ) {
       const settings = yield* loadSettings;
       const token = yield* authorizeWithBrowser(settings, onAuthorizationUrl);
@@ -257,9 +249,9 @@ export const AuthLive = Layer.effect(
       Effect.tryPromise({
         try: () => rm(credentialsPath, { force: true }),
         catch: (cause) => storageError("logout", credentialsPath, cause),
-      }),
+      })
     );
 
     return AuthService.of({ resolve, login, logout });
-  }),
+  })
 );

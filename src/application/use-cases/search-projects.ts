@@ -5,12 +5,12 @@ import { fuzzyScore } from "../../utils/fuzzy-score.js";
 
 const weightedScore = (
   score: number | undefined,
-  weight: number,
+  weight: number
 ): number | undefined => (score === undefined ? undefined : score + weight);
 
 const projectScore = (
   project: ProjectSummary,
-  terms: ReadonlyArray<string>,
+  terms: ReadonlyArray<string>
 ): number | undefined => {
   let total = 0;
   for (const term of terms) {
@@ -23,7 +23,7 @@ const projectScore = (
     const best = scores.reduce<number>(
       (current, score) =>
         score === undefined ? current : Math.min(current, score),
-      Number.POSITIVE_INFINITY,
+      Number.POSITIVE_INFINITY
     );
     if (!Number.isFinite(best)) {
       return undefined;
@@ -48,8 +48,8 @@ export const searchProjects = Effect.fn("searchProjects")(
         .toSorted(
           (left, right) =>
             left.score - right.score ||
-            left.project.name.localeCompare(right.project.name),
+            left.project.name.localeCompare(right.project.name)
         )
         .map(({ project }) => project);
-    }),
+    })
 );

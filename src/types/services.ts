@@ -10,10 +10,7 @@ import type {
   OAuthError,
   StateError,
 } from "../schemas/errors.js";
-import type {
-  AuthResolution,
-  AuthorizationUrlHandler,
-} from "./auth.js";
+import type { AuthResolution, AuthorizationUrlHandler } from "./auth.js";
 import type { PluginConfig, PluginPaths } from "./config.js";
 import type {
   BranchSummary,
@@ -36,7 +33,7 @@ export interface AuthServiceShape {
     AuthUnavailableError | ConfigError | OAuthError
   >;
   readonly login: (
-    onAuthorizationUrl: AuthorizationUrlHandler,
+    onAuthorizationUrl: AuthorizationUrlHandler
   ) => Effect.Effect<AuthResolution, ConfigError | OAuthError>;
   readonly logout: Effect.Effect<void, OAuthError>;
 }
@@ -44,11 +41,14 @@ export interface AuthServiceShape {
 export interface StateServiceShape {
   readonly loadDashboard: Effect.Effect<DashboardState, StateError>;
   readonly saveDashboard: (
-    state: DashboardState,
+    state: DashboardState
   ) => Effect.Effect<void, StateError>;
-  readonly loadProjectCache: Effect.Effect<ProjectCache | undefined, StateError>;
+  readonly loadProjectCache: Effect.Effect<
+    ProjectCache | undefined,
+    StateError
+  >;
   readonly saveProjectCache: (
-    cache: ProjectCache,
+    cache: ProjectCache
   ) => Effect.Effect<void, StateError>;
   readonly clearProjectCache: Effect.Effect<void, StateError>;
 }
@@ -73,21 +73,21 @@ export interface NeonServiceShape {
   >;
   readonly getProjectDetails: (
     projectId: string,
-    branchId?: string,
+    branchId?: string
   ) => Effect.Effect<
     ProjectDetails,
     NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
   >;
   readonly refreshProjectDetails: (
     projectId: string,
-    branchId?: string,
+    branchId?: string
   ) => Effect.Effect<
     ProjectDetails,
     NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
   >;
   readonly createBranch: (
     projectId: string,
-    name: string,
+    name: string
   ) => Effect.Effect<
     BranchSummary,
     NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
@@ -95,14 +95,14 @@ export interface NeonServiceShape {
   readonly renameBranch: (
     projectId: string,
     branchId: string,
-    name: string,
+    name: string
   ) => Effect.Effect<
     BranchSummary,
     NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
   >;
   readonly deleteBranch: (
     projectId: string,
-    branchId: string,
+    branchId: string
   ) => Effect.Effect<
     void,
     NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
@@ -111,7 +111,7 @@ export interface NeonServiceShape {
     projectId: string,
     branchId: string,
     sourceBranchId: string,
-    preserveUnderName: string,
+    preserveUnderName: string
   ) => Effect.Effect<
     BranchSummary,
     NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
@@ -119,7 +119,7 @@ export interface NeonServiceShape {
   readonly runComputeAction: (
     projectId: string,
     endpointId: string,
-    action: ComputeAction,
+    action: ComputeAction
   ) => Effect.Effect<
     void,
     NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
@@ -127,7 +127,7 @@ export interface NeonServiceShape {
   readonly updateCompute: (
     projectId: string,
     endpointId: string,
-    settings: ComputeSettings,
+    settings: ComputeSettings
   ) => Effect.Effect<
     void,
     NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
@@ -135,7 +135,7 @@ export interface NeonServiceShape {
   readonly getConnectionString: (
     projectId: string,
     branchId: string,
-    endpointId: string,
+    endpointId: string
   ) => Effect.Effect<
     string,
     NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
@@ -143,7 +143,9 @@ export interface NeonServiceShape {
 }
 
 export interface HerdrServiceShape {
-  readonly focusPane: (paneId: string) => Effect.Effect<void, HerdrCommandError>;
+  readonly focusPane: (
+    paneId: string
+  ) => Effect.Effect<void, HerdrCommandError>;
   readonly openDashboard: Effect.Effect<string | undefined, HerdrCommandError>;
 }
 
@@ -151,7 +153,7 @@ export interface NeonCliServiceShape {
   readonly findExecutable: Effect.Effect<string | undefined>;
   readonly psql: (
     projectId: string,
-    branchId: string,
+    branchId: string
   ) => Effect.Effect<void, NeonCliError>;
 }
 

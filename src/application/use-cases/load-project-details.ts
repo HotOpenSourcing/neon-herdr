@@ -7,7 +7,7 @@ import { StateService } from "../ports/state-service.js";
 const loadProjectDetailsWith = Effect.fn("loadProjectDetailsWith")(function* (
   projectId: string,
   branchId?: string,
-  refresh = false,
+  refresh = false
 ) {
   const neon = yield* NeonService;
   const state = yield* StateService;
@@ -29,16 +29,16 @@ const loadProjectDetailsWith = Effect.fn("loadProjectDetailsWith")(function* (
     .pipe(
       Effect.catchAll((error) =>
         Effect.logDebug(
-          `Could not save the dashboard selection: ${displayErrorMessage(error)}`,
-        ),
-      ),
+          `Could not save the dashboard selection: ${displayErrorMessage(error)}`
+        )
+      )
     );
   return details;
 });
 
 export const loadProjectDetails = Effect.fn("loadProjectDetails")(function* (
   projectId: string,
-  branchId?: string,
+  branchId?: string
 ) {
   return yield* loadProjectDetailsWith(projectId, branchId);
 });
@@ -46,5 +46,5 @@ export const loadProjectDetails = Effect.fn("loadProjectDetails")(function* (
 export const refreshProjectDetails = Effect.fn("refreshProjectDetails")(
   function* (projectId: string, branchId?: string) {
     return yield* loadProjectDetailsWith(projectId, branchId, true);
-  },
+  }
 );

@@ -6,10 +6,10 @@ description = "Manage Neon projects, branches, computes, and connections from He
 platforms = ["linux", "macos"]
 
 [[build]]
-command = ["npm", "ci"]
+command = ["pnpm", "install", "--frozen-lockfile"]
 
 [[build]]
-command = ["npm", "run", "build"]
+command = ["pnpm", "build"]
 
 [[actions]]
 id = "dashboard"

@@ -5,11 +5,11 @@ import { Effect, Layer, Schema } from "effect";
 
 import { ConfigService } from "../../application/ports/config-service.js";
 import { PLUGIN_CONFIG_FILE } from "../../constants/plugin.js";
-import { ConfigError } from "../../schemas/errors.js";
 import {
   DefaultPluginConfig,
   PluginConfigSchema,
 } from "../../schemas/config.js";
+import { ConfigError } from "../../schemas/errors.js";
 import { resolvePluginPaths } from "../../utils/resolve-plugin-paths.js";
 
 const isMissingFile = (cause: unknown): boolean =>
@@ -40,7 +40,7 @@ export const ConfigLive = Layer.effect(
             }),
         }),
       ],
-      { concurrency: "unbounded", discard: true },
+      { concurrency: "unbounded", discard: true }
     );
     const configPath = join(paths.configDir, PLUGIN_CONFIG_FILE);
     const load = Effect.tryPromise({
@@ -55,26 +55,26 @@ export const ConfigLive = Layer.effect(
                 message: "Could not read the plugin configuration.",
                 path: configPath,
                 cause,
-              }),
-            ),
+              })
+            )
       ),
       Effect.flatMap((contents) => {
         if (contents === undefined) {
           return Effect.succeed(DefaultPluginConfig);
         }
-        return Schema.decodeUnknown(
-          Schema.parseJson(PluginConfigSchema),
-        )(contents).pipe(
+        return Schema.decodeUnknown(Schema.parseJson(PluginConfigSchema))(
+          contents
+        ).pipe(
           Effect.mapError((cause) =>
             ConfigError.make({
               message: "The plugin configuration is not valid.",
               path: configPath,
               cause,
-            }),
-          ),
+            })
+          )
         );
-      }),
+      })
     );
     return ConfigService.of({ paths, load });
-  }),
+  })
 );

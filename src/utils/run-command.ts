@@ -14,7 +14,7 @@ const processError = (executable: string, cause: unknown) =>
 
 export const runCapturedCommand = (
   executable: string,
-  args: ReadonlyArray<string>,
+  args: ReadonlyArray<string>
 ): Effect.Effect<CommandResult, ProcessError> =>
   Effect.async((resume, signal) => {
     const child = spawn(executable, args, {
@@ -57,7 +57,7 @@ export const runCapturedCommand = (
 
 export const runInheritedCommand = (
   executable: string,
-  args: ReadonlyArray<string>,
+  args: ReadonlyArray<string>
 ): Effect.Effect<number, ProcessError> =>
   Effect.async((resume, signal) => {
     const child = spawn(executable, args, {

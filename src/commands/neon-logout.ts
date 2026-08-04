@@ -6,7 +6,9 @@ import { runCommand } from "./run-command.js";
 const program = Effect.fn("logoutNeon")(function* () {
   yield* disconnectNeon();
   yield* Effect.sync(() => {
-    process.stdout.write("Neon OAuth credentials and cached account data removed.\n");
+    process.stdout.write(
+      "Neon OAuth credentials and cached account data removed.\n"
+    );
   });
 })();
 

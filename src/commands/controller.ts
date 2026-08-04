@@ -57,15 +57,9 @@ export const createDashboardController = (): DashboardController => ({
     branchId,
     sourceBranchId,
     branchName,
-    confirmation,
+    confirmation
   ) =>
-    resetBranch(
-      projectId,
-      branchId,
-      sourceBranchId,
-      branchName,
-      confirmation,
-    ),
+    resetBranch(projectId, branchId, sourceBranchId, branchName, confirmation),
   runComputeAction,
   updateCompute,
   copyConnection: copyConnectionString,

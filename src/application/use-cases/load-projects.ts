@@ -8,7 +8,7 @@ import { searchProjects } from "./search-projects.js";
 
 const loadProjectsWith = Effect.fn("loadProjectsWith")(function* (
   search?: string,
-  refresh = false,
+  refresh = false
 ) {
   const neon = yield* NeonService;
   const state = yield* StateService;
@@ -21,12 +21,12 @@ const loadProjectsWith = Effect.fn("loadProjectsWith")(function* (
       ).pipe(
         Effect.catchAll((error) =>
           Effect.logDebug(
-            `Could not load Neon organizations: ${displayErrorMessage(error)}`,
-          ).pipe(Effect.as([])),
-        ),
+            `Could not load Neon organizations: ${displayErrorMessage(error)}`
+          ).pipe(Effect.as([]))
+        )
       ),
     },
-    { concurrency: "unbounded" },
+    { concurrency: "unbounded" }
   ).pipe(
     Effect.tap(({ projects }) =>
       Clock.currentTimeMillis.pipe(
@@ -34,14 +34,14 @@ const loadProjectsWith = Effect.fn("loadProjectsWith")(function* (
           state.saveProjectCache({
             projects,
             cachedAt: new Date(now).toISOString(),
-          }),
+          })
         ),
         Effect.catchAll((error) =>
           Effect.logDebug(
-            `Could not save the Neon project cache: ${displayErrorMessage(error)}`,
-          ),
-        ),
-      ),
+            `Could not save the Neon project cache: ${displayErrorMessage(error)}`
+          )
+        )
+      )
     ),
     Effect.flatMap(({ projects, organizations }) =>
       searchProjects(projects, search ?? "").pipe(
@@ -51,9 +51,9 @@ const loadProjectsWith = Effect.fn("loadProjectsWith")(function* (
           organizations,
           stale: false,
           authenticated: true,
-        })),
-      ),
-    ),
+        }))
+      )
+    )
   );
   return yield* live.pipe(
     Effect.catchAll((failure) =>
@@ -71,24 +71,24 @@ const loadProjectsWith = Effect.fn("loadProjectsWith")(function* (
                     ? { authenticated: false }
                     : {}),
                   warning: displayErrorMessage(
-                    `${displayErrorMessage(failure)} Showing cache from ${cache.cachedAt}.`,
+                    `${displayErrorMessage(failure)} Showing cache from ${cache.cachedAt}.`
                   ),
-                })),
-              ),
-        ),
-      ),
-    ),
+                }))
+              )
+        )
+      )
+    )
   );
 });
 
 export const loadProjects = Effect.fn("loadProjects")(function* (
-  search?: string,
+  search?: string
 ) {
   return yield* loadProjectsWith(search);
 });
 
 export const refreshProjects = Effect.fn("refreshProjects")(function* (
-  search?: string,
+  search?: string
 ) {
   return yield* loadProjectsWith(search, true);
 });

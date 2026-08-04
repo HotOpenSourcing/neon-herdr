@@ -1,5 +1,4 @@
-const CREDENTIAL_PATTERN =
-  /(?:postgres(?:ql)?:\/\/)([^:@/\s]+):([^@/\s]+)@/giu;
+const CREDENTIAL_PATTERN = /(?:postgres(?:ql)?:\/\/)([^:@/\s]+):([^@/\s]+)@/giu;
 const API_KEY_PATTERN = /(?:napi_[A-Za-z0-9_-]+|NEON_API_KEY\s*=\s*[^\s]+)/giu;
 const OAUTH_FIELD_PATTERN =
   /(?:access_token|refresh_token|id_token)["']?\s*[:=]\s*["']?[^"'\s,}]+/giu;
