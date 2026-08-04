@@ -1,0 +1,42 @@
+id = "neon.herdr"
+name = "Neon"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Manage Neon projects, branches, computes, and connections from Herdr."
+platforms = ["linux", "macos"]
+
+[[build]]
+command = ["npm", "ci"]
+
+[[build]]
+command = ["npm", "run", "build"]
+
+[[actions]]
+id = "dashboard"
+title = "Open Neon dashboard"
+contexts = ["workspace"]
+command = ["node", "dist/commands/open-dashboard.js"]
+
+[[actions]]
+id = "authenticate"
+title = "Sign in to Neon"
+contexts = ["workspace"]
+command = ["node", "dist/commands/neon-auth.js"]
+
+[[actions]]
+id = "logout"
+title = "Sign out of Neon"
+contexts = ["workspace"]
+command = ["node", "dist/commands/neon-logout.js"]
+
+[[actions]]
+id = "psql"
+title = "Open selected Neon branch in psql"
+contexts = ["workspace"]
+command = ["node", "dist/commands/neon-psql.js"]
+
+[[panes]]
+id = "dashboard"
+title = "Neon"
+placement = "tab"
+command = ["node", "dist/commands/dashboard.js"]

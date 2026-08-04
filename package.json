@@ -1,0 +1,32 @@
+{
+  "name": "neon-herdr",
+  "version": "0.1.0",
+  "description": "Manage Neon projects and branches from a Herdr dashboard pane.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "clean": "node --run clean:dist",
+    "clean:dist": "rm -rf dist",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run build"
+  },
+  "dependencies": {
+    "@neon/sdk": "1.4.0",
+    "effect": "3.22.1",
+    "ink": "6.8.0",
+    "open": "10.2.0",
+    "openid-client": "6.8.1",
+    "react": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "@types/react": "19.2.18",
+    "tsup": "8.5.1",
+    "tsx": "4.23.4",
+    "typescript": "7.0.2"
+  }
+}

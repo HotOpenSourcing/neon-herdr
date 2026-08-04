@@ -1,0 +1,7 @@
+{
+  "oauthClientId": "neonctl",
+  "oauthHost": "https://oauth2.neon.tech",
+  "refreshIntervalSeconds": 30,
+  "pooledConnections": true,
+  "pageSize": 50
+}
