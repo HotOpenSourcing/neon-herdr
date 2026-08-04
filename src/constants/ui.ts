@@ -5,6 +5,7 @@ export const DEFAULT_PROJECT_PAGE_SIZE = 50;
 export const DEFAULT_REFRESH_INTERVAL_SECONDS = 30;
 export const MAX_VISIBLE_PROJECTS = 15;
 export const MAX_VISIBLE_BRANCHES = 10;
+export const MAX_VISIBLE_ORGANIZATIONS = 10;
 export const MAX_DISPLAY_ERROR_LENGTH = 240;
 
 export const DASHBOARD_ACTIVITY_LABELS: Readonly<
@@ -25,4 +26,6 @@ export const DASHBOARD_ACTIVITY_LABELS: Readonly<
   "restart-compute": "restarting compute…",
   "update-compute": "updating compute…",
   "copy-connection": "copying connection…",
+  "select-organization": "switching organization…",
+  "load-organizations": "loading organizations…",
 };

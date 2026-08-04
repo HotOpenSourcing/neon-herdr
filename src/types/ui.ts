@@ -6,6 +6,7 @@ import type { ConfigService } from "../application/ports/config-service.js";
 import type { NeonService } from "../application/ports/neon-service.js";
 import type { StateService } from "../application/ports/state-service.js";
 import type { AuthorizationUrlHandler } from "./auth.js";
+import type { SettingsSummary } from "./config.js";
 import type { ApplicationError } from "./errors.js";
 import type {
   ComputeAction,
@@ -17,10 +18,17 @@ import type {
 } from "./neon.js";
 import type { DashboardState as PersistedDashboardState } from "./state.js";
 
-export type DashboardScreen = "projects" | "details" | "help";
+export type DashboardScreen =
+  | "signin"
+  | "organizations"
+  | "projects"
+  | "details"
+  | "help";
 export type DashboardStatus = "loading" | "ready" | "error";
 export type DashboardActivity =
   | "authenticate"
+  | "select-organization"
+  | "load-organizations"
   | "disconnect"
   | "load-projects"
   | "refresh-projects"
@@ -56,6 +64,24 @@ export type DashboardEffect<A> = Effect.Effect<
   DashboardRequirements
 >;
 
+export interface OrganizationPickerProps {
+  readonly organizations: ReadonlyArray<OrganizationSummary>;
+  readonly total: number;
+  readonly cursor: number;
+  readonly query: string;
+  readonly message?: string | undefined;
+  readonly busy: boolean;
+}
+
+export interface SignInProps {
+  readonly checking: boolean;
+  readonly connecting: boolean;
+  readonly reason?: string | undefined;
+  readonly authorizationUrl?: string | undefined;
+  readonly toast?: string | undefined;
+  readonly signInCommand: string;
+}
+
 export interface DashboardPrompt {
   readonly kind: PromptKind;
   readonly label: string;
@@ -71,11 +97,17 @@ export interface DashboardViewState {
   readonly allProjects: ReadonlyArray<ProjectSummary>;
   readonly organizations: ReadonlyArray<OrganizationSummary>;
   readonly projectCursor: number;
+  readonly organizationCursor: number;
+  readonly organizationChoices: ReadonlyArray<OrganizationSummary>;
+  readonly organizationMatches: ReadonlyArray<OrganizationSummary>;
+  readonly organizationQuery: string;
+  readonly settings?: SettingsSummary | undefined;
   readonly details?: ProjectDetails | undefined;
   readonly loadedBranchIds: ReadonlyArray<string>;
   readonly query: string;
   readonly stale: boolean;
   readonly authenticated: boolean;
+  readonly authorizationUrl?: string | undefined;
   readonly warning?: string | undefined;
   readonly error?: string | undefined;
   readonly toast?: string | undefined;
@@ -101,10 +133,18 @@ export type DashboardAction =
       readonly message: string;
       readonly authenticated?: boolean | undefined;
     }
+  | {
+      readonly type: "CHOOSE_ORGANIZATION";
+      readonly organizations: ReadonlyArray<OrganizationSummary>;
+      readonly message?: string | undefined;
+    }
+  | { readonly type: "MOVE_ORGANIZATION"; readonly delta: number }
+  | { readonly type: "FILTER_ORGANIZATIONS"; readonly query: string }
   | { readonly type: "MOVE_PROJECT"; readonly delta: number }
   | { readonly type: "MOVE_BRANCH"; readonly delta: number }
   | { readonly type: "SHOW_PROJECTS" }
   | { readonly type: "SHOW_HELP" }
+  | { readonly type: "SETTINGS_LOADED"; readonly settings: SettingsSummary }
   | { readonly type: "CLOSE_HELP" }
   | { readonly type: "OPEN_PROMPT"; readonly prompt: DashboardPrompt }
   | { readonly type: "UPDATE_PROMPT"; readonly value: string }
@@ -125,6 +165,14 @@ export interface DashboardController {
     search?: string
   ) => DashboardEffect<ProjectListResult>;
   readonly refreshProjects: (
+    search?: string
+  ) => DashboardEffect<ProjectListResult>;
+  readonly loadSettings: () => DashboardEffect<SettingsSummary>;
+  readonly loadOrganizations: () => DashboardEffect<
+    ReadonlyArray<OrganizationSummary>
+  >;
+  readonly selectOrganization: (
+    orgId: string,
     search?: string
   ) => DashboardEffect<ProjectListResult>;
   readonly searchProjects: (

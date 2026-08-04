@@ -43,7 +43,7 @@ export const ConfigLive = Layer.effect(
       { concurrency: "unbounded", discard: true }
     );
     const configPath = join(paths.configDir, PLUGIN_CONFIG_FILE);
-    const load = Effect.tryPromise({
+    const readConfigFile = Effect.tryPromise({
       try: () => readFile(configPath, "utf8"),
       catch: (cause) => cause,
     }).pipe(
@@ -57,7 +57,10 @@ export const ConfigLive = Layer.effect(
                 cause,
               })
             )
-      ),
+      )
+    );
+
+    const load = readConfigFile.pipe(
       Effect.flatMap((contents) => {
         if (contents === undefined) {
           return Effect.succeed(DefaultPluginConfig);
@@ -75,6 +78,23 @@ export const ConfigLive = Layer.effect(
         );
       })
     );
-    return ConfigService.of({ paths, load });
+
+    const explicitKeys = readConfigFile.pipe(
+      Effect.map((contents) => {
+        if (contents === undefined) {
+          return [];
+        }
+        try {
+          const parsed: unknown = JSON.parse(contents);
+          return typeof parsed === "object" && parsed !== null
+            ? Object.keys(parsed)
+            : [];
+        } catch {
+          return [];
+        }
+      })
+    );
+
+    return ConfigService.of({ paths, configPath, load, explicitKeys });
   })
 );

@@ -5,12 +5,31 @@ import {
   NEONCTL_OAUTH_CLIENT_ID,
 } from "../constants/oauth.js";
 import {
+  DEFAULT_DASHBOARD_PLACEMENT,
+  DEFAULT_DASHBOARD_SPLIT_DIRECTION,
+} from "../constants/plugin.js";
+import {
   DEFAULT_PROJECT_PAGE_SIZE,
   DEFAULT_REFRESH_INTERVAL_SECONDS,
 } from "../constants/ui.js";
 
+export const DashboardPlacementSchema = Schema.Literal(
+  "split",
+  "tab",
+  "overlay",
+  "zoomed"
+);
+
+export const DashboardSplitDirectionSchema = Schema.Literal("right", "down");
+
 export const PluginConfigSchema = Schema.Struct({
   orgId: Schema.optional(Schema.String),
+  dashboardPlacement: Schema.optionalWith(DashboardPlacementSchema, {
+    default: () => DEFAULT_DASHBOARD_PLACEMENT,
+  }),
+  dashboardSplitDirection: Schema.optionalWith(DashboardSplitDirectionSchema, {
+    default: () => DEFAULT_DASHBOARD_SPLIT_DIRECTION,
+  }),
   oauthClientId: Schema.optionalWith(Schema.String.pipe(Schema.minLength(1)), {
     default: () => NEONCTL_OAUTH_CLIENT_ID,
   }),

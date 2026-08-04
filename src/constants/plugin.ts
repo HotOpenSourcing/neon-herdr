@@ -1,5 +1,10 @@
-export const PLUGIN_ID = "neon.herdr";
+export const DEFAULT_PLUGIN_ID = "neon.herdr";
+export const DEFAULT_HERDR_BIN = "herdr";
 export const DASHBOARD_ENTRYPOINT_ID = "dashboard";
+export const AUTHENTICATE_ACTION_ID = "authenticate";
+export const LOGOUT_ACTION_ID = "logout";
+export const DEFAULT_DASHBOARD_PLACEMENT = "split";
+export const DEFAULT_DASHBOARD_SPLIT_DIRECTION = "down";
 export const DASHBOARD_STATE_FILE = "dashboard.json";
 export const PROJECT_CACHE_FILE = "projects-cache.json";
 export const PLUGIN_CONFIG_FILE = "config.json";

@@ -1,13 +1,18 @@
 import type { DashboardAction, DashboardViewState } from "../../types/ui.js";
+import { filterOrganizations } from "../../utils/filter-organizations.js";
 
 export const initialDashboardState: DashboardViewState = {
-  screen: "projects",
+  screen: "signin",
   status: "loading",
   activity: "load-projects",
   projects: [],
   allProjects: [],
   organizations: [],
   projectCursor: 0,
+  organizationCursor: 0,
+  organizationChoices: [],
+  organizationMatches: [],
+  organizationQuery: "",
   loadedBranchIds: [],
   query: "",
   stale: false,
@@ -51,6 +56,7 @@ export const dashboardReducer = (
               ),
         stale: action.result.stale,
         authenticated: action.result.authenticated ?? state.authenticated,
+        authorizationUrl: undefined,
         warning: action.result.warning,
         error: undefined,
       };
@@ -115,16 +121,68 @@ export const dashboardReducer = (
         },
         loadedBranchIds,
         authenticated: true,
+        authorizationUrl: undefined,
         error: undefined,
       };
     }
-    case "ERROR":
+    case "ERROR": {
+      if (action.authenticated === false) {
+        return {
+          ...state,
+          screen: "signin",
+          status: "error",
+          activity: undefined,
+          authenticated: false,
+          authorizationUrl: undefined,
+          warning: undefined,
+          error: action.message,
+        };
+      }
       return {
         ...state,
+        screen: state.screen === "signin" ? "projects" : state.screen,
         status: "error",
         activity: undefined,
         error: action.message,
         authenticated: action.authenticated ?? state.authenticated,
+      };
+    }
+    case "CHOOSE_ORGANIZATION":
+      return {
+        ...state,
+        screen: "organizations",
+        status: "ready",
+        activity: undefined,
+        organizationChoices: action.organizations,
+        organizationMatches: action.organizations,
+        organizationQuery: "",
+        organizationCursor: 0,
+        warning: action.message,
+        error: undefined,
+        toast: undefined,
+      };
+    case "FILTER_ORGANIZATIONS": {
+      const matches = filterOrganizations(
+        state.organizationChoices,
+        action.query
+      );
+      return {
+        ...state,
+        organizationQuery: action.query,
+        organizationMatches: matches,
+        organizationCursor: 0,
+      };
+    }
+    case "MOVE_ORGANIZATION":
+      return {
+        ...state,
+        organizationCursor: Math.max(
+          0,
+          Math.min(
+            state.organizationMatches.length - 1,
+            state.organizationCursor + action.delta
+          )
+        ),
       };
     case "MOVE_PROJECT":
       return {
@@ -171,10 +229,18 @@ export const dashboardReducer = (
       };
     case "SHOW_HELP":
       return { ...state, screen: "help" };
+    case "SETTINGS_LOADED":
+      return { ...state, settings: action.settings };
     case "CLOSE_HELP":
       return {
         ...state,
-        screen: state.details === undefined ? "projects" : "details",
+        screen: state.authenticated
+          ? state.details === undefined
+            ? "projects"
+            : "details"
+          : state.organizationChoices.length > 0
+            ? "organizations"
+            : "signin",
       };
     case "OPEN_PROMPT":
       return { ...state, prompt: action.prompt, toast: undefined };
@@ -187,11 +253,15 @@ export const dashboardReducer = (
     case "AUTHORIZATION_URL":
       return {
         ...state,
-        warning: `Complete Neon sign-in in your browser. If it did not open, visit ${action.url}`,
+        screen: "signin",
+        authorizationUrl: action.url,
+        warning: undefined,
+        error: undefined,
       };
     case "SIGNED_OUT":
       return {
         ...initialDashboardState,
+        screen: "signin",
         status: "ready",
         activity: undefined,
         toast: "Signed out of Neon.",

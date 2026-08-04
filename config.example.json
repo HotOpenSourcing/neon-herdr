@@ -1,6 +1,8 @@
 {
   "oauthClientId": "neonctl",
   "oauthHost": "https://oauth2.neon.tech",
+  "dashboardPlacement": "split",
+  "dashboardSplitDirection": "down",
   "refreshIntervalSeconds": 30,
   "pooledConnections": true,
   "pageSize": 50

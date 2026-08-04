@@ -20,12 +20,14 @@ import {
   OAUTH_FAILURE_HTML,
   OAUTH_SUCCESS_HTML,
 } from "../../constants/oauth.js";
+import { AUTHENTICATE_ACTION_ID } from "../../constants/plugin.js";
 import { OAuthError } from "../../schemas/errors.js";
 import type {
   AuthorizationUrlHandler,
   OAuthClientSettings,
 } from "../../types/auth.js";
 import { errorMessage } from "../../utils/error-message.js";
+import { herdrActionCommand } from "../../utils/plugin-identity.js";
 
 const oauthFailure = (
   operation: OAuthError["operation"],
@@ -294,8 +296,7 @@ export const refreshOAuthToken = (
             cause.error === "invalid_grant"
               ? "The stored Neon OAuth session expired or was revoked."
               : errorMessage(cause),
-          action:
-            "Press a in the dashboard, or run the Neon sign-in action again.",
+          action: `Press a in the dashboard, or run \`${herdrActionCommand(AUTHENTICATE_ACTION_ID)}\`.`,
           cause,
         }),
     });

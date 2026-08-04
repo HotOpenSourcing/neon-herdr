@@ -13,9 +13,15 @@ command = ["pnpm", "build"]
 
 [[actions]]
 id = "dashboard"
-title = "Open Neon dashboard"
+title = "Open Neon dashboard in a split"
 contexts = ["workspace"]
 command = ["node", "dist/commands/open-dashboard.js"]
+
+[[actions]]
+id = "dashboard-tab"
+title = "Open Neon dashboard in a tab"
+contexts = ["workspace"]
+command = ["node", "dist/commands/open-dashboard.js", "tab"]
 
 [[actions]]
 id = "authenticate"
@@ -38,5 +44,5 @@ command = ["node", "dist/commands/neon-psql.js"]
 [[panes]]
 id = "dashboard"
 title = "Neon"
-placement = "tab"
+placement = "split"
 command = ["node", "dist/commands/dashboard.js"]

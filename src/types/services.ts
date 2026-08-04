@@ -8,10 +8,15 @@ import type {
   NeonCliError,
   NeonRequestError,
   OAuthError,
+  OrganizationSelectionRequired,
   StateError,
 } from "../schemas/errors.js";
 import type { AuthResolution, AuthorizationUrlHandler } from "./auth.js";
-import type { PluginConfig, PluginPaths } from "./config.js";
+import type {
+  DashboardPlacement,
+  PluginConfig,
+  PluginPaths,
+} from "./config.js";
 import type {
   BranchSummary,
   ComputeAction,
@@ -24,7 +29,9 @@ import type { DashboardState, ProjectCache } from "./state.js";
 
 export interface ConfigServiceShape {
   readonly paths: PluginPaths;
+  readonly configPath: string;
   readonly load: Effect.Effect<PluginConfig, ConfigError>;
+  readonly explicitKeys: Effect.Effect<ReadonlyArray<string>, ConfigError>;
 }
 
 export interface AuthServiceShape {
@@ -65,11 +72,19 @@ export interface NeonServiceShape {
   >;
   readonly listProjects: Effect.Effect<
     ReadonlyArray<ProjectSummary>,
-    NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
+    | NeonRequestError
+    | OrganizationSelectionRequired
+    | AuthUnavailableError
+    | ConfigError
+    | OAuthError
   >;
   readonly refreshProjects: Effect.Effect<
     ReadonlyArray<ProjectSummary>,
-    NeonRequestError | AuthUnavailableError | ConfigError | OAuthError
+    | NeonRequestError
+    | OrganizationSelectionRequired
+    | AuthUnavailableError
+    | ConfigError
+    | OAuthError
   >;
   readonly getProjectDetails: (
     projectId: string,
@@ -146,7 +161,9 @@ export interface HerdrServiceShape {
   readonly focusPane: (
     paneId: string
   ) => Effect.Effect<void, HerdrCommandError>;
-  readonly openDashboard: Effect.Effect<string | undefined, HerdrCommandError>;
+  readonly openDashboard: (
+    placement?: DashboardPlacement
+  ) => Effect.Effect<string | undefined, HerdrCommandError | ConfigError>;
 }
 
 export interface NeonCliServiceShape {

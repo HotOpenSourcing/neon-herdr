@@ -2,6 +2,7 @@ import { Duration, Effect, Fiber, Schedule } from "effect";
 import { Box, Text, useApp, useInput, useStdout } from "ink";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
+import { AUTHENTICATE_ACTION_ID } from "../../constants/plugin.js";
 import { UI_COLORS } from "../../constants/theme.js";
 import {
   DASHBOARD_ACTIVITY_LABELS,
@@ -10,6 +11,7 @@ import {
   MAX_VISIBLE_PROJECTS,
   MIN_TERMINAL_COLUMNS,
 } from "../../constants/ui.js";
+import { OrganizationSelectionRequired } from "../../schemas/errors.js";
 import type { ApplicationError } from "../../types/errors.js";
 import type { ComputeSettings } from "../../types/neon.js";
 import type {
@@ -20,11 +22,23 @@ import type {
 } from "../../types/ui.js";
 import { displayErrorMessage } from "../../utils/display-error-message.js";
 import { formatBytes, formatDate } from "../../utils/format.js";
-import { isAuthenticationFailure } from "../../utils/is-authentication-failure.js";
+import {
+  impliesAuthenticated,
+  isAuthenticationFailure,
+} from "../../utils/is-authentication-failure.js";
+import { herdrActionCommand } from "../../utils/plugin-identity.js";
 import {
   dashboardReducer,
   initialDashboardState,
 } from "../state/dashboard-reducer.js";
+import { OrganizationPicker } from "./organization-picker.js";
+import { Screen } from "./screen.js";
+import { SignIn } from "./sign-in.js";
+
+const SETTING_VALUE_WIDTH = 24;
+
+const truncate = (value: string, width: number): string =>
+  value.length <= width ? value : `${value.slice(0, width - 1)}…`;
 
 const parseComputeSettings = (value: string): ComputeSettings | undefined => {
   const parts = value.split(",").map((part) => Number(part.trim()));
@@ -75,12 +89,22 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
           Effect.matchEffect({
             onFailure: (failure) =>
               Effect.sync(() => {
+                if (failure instanceof OrganizationSelectionRequired) {
+                  dispatch({
+                    type: "CHOOSE_ORGANIZATION",
+                    organizations: failure.organizations,
+                    message: `${failure.message} ${failure.action}`,
+                  });
+                  return;
+                }
                 dispatch({
                   type: "ERROR",
                   message: displayErrorMessage(failure),
                   ...(isAuthenticationFailure(failure)
                     ? { authenticated: false }
-                    : {}),
+                    : impliesAuthenticated(failure)
+                      ? { authenticated: true }
+                      : {}),
                 });
               }),
             onSuccess: (value) => Effect.sync(() => onSuccess(value)),
@@ -379,12 +403,80 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
       }
       return;
     }
+    if (state.screen === "organizations") {
+      if (key.downArrow || (key.ctrl && input === "n")) {
+        dispatch({ type: "MOVE_ORGANIZATION", delta: 1 });
+      } else if (key.upArrow || (key.ctrl && input === "p")) {
+        dispatch({ type: "MOVE_ORGANIZATION", delta: -1 });
+      } else if (key.escape) {
+        if (state.organizationQuery.length > 0) {
+          dispatch({ type: "FILTER_ORGANIZATIONS", query: "" });
+        } else if (state.authenticated) {
+          dispatch({ type: "SHOW_PROJECTS" });
+        }
+      } else if (key.backspace || key.delete) {
+        dispatch({
+          type: "FILTER_ORGANIZATIONS",
+          query: state.organizationQuery.slice(0, -1),
+        });
+      } else if (key.ctrl && input === "u") {
+        dispatch({ type: "FILTER_ORGANIZATIONS", query: "" });
+      } else if (!(key.ctrl || key.meta || key.return) && input.length > 0) {
+        dispatch({
+          type: "FILTER_ORGANIZATIONS",
+          query: `${state.organizationQuery}${input}`,
+        });
+      } else if (key.return) {
+        const organization =
+          state.organizationMatches[state.organizationCursor];
+        if (organization !== undefined) {
+          runRequest(
+            "select-organization",
+            controller.selectOrganization(organization.id, state.query),
+            (result) => {
+              dispatch({ type: "PROJECTS_LOADED", result });
+              dispatch({
+                type: "TOAST",
+                message: `Showing ${organization.name}.`,
+              });
+            }
+          );
+        }
+      }
+      return;
+    }
+    if (
+      key.escape &&
+      state.screen === "signin" &&
+      state.activity === "authenticate"
+    ) {
+      if (requestRef.current !== undefined) {
+        effectRunner.runFork(Fiber.interrupt(requestRef.current));
+      }
+      dispatch({
+        type: "ERROR",
+        message: "Sign-in cancelled.",
+        authenticated: false,
+      });
+      return;
+    }
     if (input === "q" || (key.ctrl && input === "c")) {
       exit();
       return;
     }
     if (input === "?") {
       dispatch({ type: "SHOW_HELP" });
+      effectRunner.runFork(
+        controller.loadSettings().pipe(
+          Effect.matchEffect({
+            onFailure: () => Effect.void,
+            onSuccess: (settings) =>
+              Effect.sync(() => {
+                dispatch({ type: "SETTINGS_LOADED", settings });
+              }),
+          })
+        )
+      );
       return;
     }
     if (input === "a") {
@@ -421,6 +513,31 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
     }
     if (state.screen === "help") {
       dispatch({ type: "CLOSE_HELP" });
+      return;
+    }
+    if (input === "o") {
+      if (state.organizations.length > 0) {
+        dispatch({
+          type: "CHOOSE_ORGANIZATION",
+          organizations: state.organizations,
+        });
+        return;
+      }
+      runRequest(
+        "load-organizations",
+        controller.loadOrganizations(),
+        (organizations) => {
+          if (organizations.length === 0) {
+            dispatch({
+              type: "ERROR",
+              message:
+                "This Neon account has no organizations to switch between.",
+            });
+            return;
+          }
+          dispatch({ type: "CHOOSE_ORGANIZATION", organizations });
+        }
+      );
       return;
     }
     if (state.screen === "projects") {
@@ -565,25 +682,51 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
 
   const columns = stdout.columns ?? 80;
   const narrow = columns < MIN_TERMINAL_COLUMNS;
+  const signInCommand = herdrActionCommand(AUTHENTICATE_ACTION_ID);
 
   if (state.screen === "help") {
     return (
-      <Box flexDirection="column" padding={1}>
-        <Text bold color={UI_COLORS.brand}>
-          Neon Herdr keys
+      <Screen context="help" keys="any key closes help">
+        <Text bold color={UI_COLORS.section}>
+          Keys
         </Text>
         <Text>j/k or arrows move · Enter opens · r refreshes · / searches</Text>
+        <Text>
+          o switch organization · a{" "}
+          {state.authenticated ? "sign out" : "sign in"} · q quit
+        </Text>
         <Text>
           b back · c create · n rename · d delete · x reset (typed confirmation)
         </Text>
         <Text>
           s start/suspend · R restart · e compute settings · y copy connection
         </Text>
-        <Text>
-          a {state.authenticated ? "sign out" : "sign in"} · q quit · ? help ·
-          any key closes help
-        </Text>
-      </Box>
+        <Box flexDirection="column" marginTop={1}>
+          <Text bold color={UI_COLORS.section}>
+            Settings
+          </Text>
+          {state.settings === undefined ? (
+            <Text dimColor>Reading configuration…</Text>
+          ) : (
+            state.settings.rows.map((row) => (
+              <Text key={row.label}>
+                {`  ${row.label.padEnd(20)}${truncate(row.value, SETTING_VALUE_WIDTH).padEnd(SETTING_VALUE_WIDTH + 2)}`}
+                <Text dimColor>{row.source}</Text>
+              </Text>
+            ))
+          )}
+          {state.settings === undefined ? null : (
+            <Text dimColor wrap="wrap">
+              Edit: {state.settings.configPath}
+            </Text>
+          )}
+        </Box>
+        <Box marginTop={1}>
+          <Text dimColor wrap="wrap">
+            Sign in from a shell with: {signInCommand}
+          </Text>
+        </Box>
+      </Screen>
     );
   }
 
@@ -591,11 +734,11 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
     return (
       <Box flexDirection="column" padding={1}>
         <Text bold color="yellow">
-          Neon Herdr needs at least {MIN_TERMINAL_COLUMNS} columns.
+          Neon needs at least {MIN_TERMINAL_COLUMNS} columns.
         </Text>
-        <Text>
+        <Text dimColor>
           Resize the pane. a {state.authenticated ? "signs out" : "signs in"}, q
-          quits, ? shows keyboard help.
+          quits, ? shows keys.
         </Text>
         {state.error === undefined ? null : (
           <Text color="red">{state.error}</Text>
@@ -604,18 +747,53 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
     );
   }
 
+  if (state.screen === "organizations") {
+    return (
+      <OrganizationPicker
+        organizations={state.organizationMatches}
+        total={state.organizationChoices.length}
+        cursor={state.organizationCursor}
+        query={state.organizationQuery}
+        message={state.warning}
+        busy={state.activity === "select-organization"}
+      />
+    );
+  }
+
+  if (state.screen === "signin") {
+    const connecting = state.activity === "authenticate";
+    return (
+      <SignIn
+        checking={state.status === "loading" && !connecting}
+        connecting={connecting}
+        reason={state.error}
+        authorizationUrl={state.authorizationUrl}
+        toast={state.toast}
+        signInCommand={signInCommand}
+      />
+    );
+  }
+
+  const projectKeys =
+    "⏎ open · / search · r refresh · o org · a " +
+    (state.authenticated ? "sign out" : "sign in") +
+    " · ? help · q quit";
+  const detailKeys =
+    "b back · c/n/d/x branch · s/R/e compute · " +
+    (selectedCompute === undefined ? "no connection" : "y connection") +
+    " · ? help · q quit";
+
   return (
-    <Box flexDirection="column" paddingX={1}>
-      <Box justifyContent="space-between">
-        <Text bold color={UI_COLORS.brand}>
-          Neon
-        </Text>
-        <Text dimColor>
-          {state.activity === undefined
-            ? "? help · q quit"
-            : DASHBOARD_ACTIVITY_LABELS[state.activity]}
-        </Text>
-      </Box>
+    <Screen
+      context={
+        state.activity === undefined
+          ? state.stale
+            ? "cached"
+            : undefined
+          : DASHBOARD_ACTIVITY_LABELS[state.activity]
+      }
+      keys={state.screen === "projects" ? projectKeys : detailKeys}
+    >
       {state.warning === undefined ? null : (
         <Text color="yellow">{state.warning}</Text>
       )}
@@ -656,9 +834,8 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
               </Text>
             ))}
           <Text dimColor>
-            {state.organizations.length} organizations · Enter details · /
-            search · r refresh · a{" "}
-            {state.authenticated ? "sign out" : "sign in"}
+            {state.projects.length} of {state.allProjects.length} projects ·{" "}
+            {state.organizations.length} organizations
           </Text>
         </Box>
       ) : state.details === undefined ? null : (
@@ -746,15 +923,8 @@ export const Dashboard = ({ controller, effectRunner }: DashboardProps) => {
               </Text>
             ))}
           </Box>
-          <Text dimColor>
-            b back · j/k branch · c/n/d/x branch · s/R/e compute ·{" "}
-            {selectedCompute === undefined
-              ? "no compute connection"
-              : "y connection"}{" "}
-            · a {state.authenticated ? "sign out" : "sign in"}
-          </Text>
         </Box>
       )}
-    </Box>
+    </Screen>
   );
 };

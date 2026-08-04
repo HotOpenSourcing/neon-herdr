@@ -8,6 +8,7 @@ import type {
   NeonCliError,
   NeonRequestError,
   OAuthError,
+  OrganizationSelectionRequired,
   StateError,
 } from "../schemas/errors.js";
 
@@ -17,6 +18,7 @@ export type ApplicationError =
   | ConfigError
   | StateError
   | NeonRequestError
+  | OrganizationSelectionRequired
   | ClipboardError
   | ConfirmationError
   | DashboardHostError;

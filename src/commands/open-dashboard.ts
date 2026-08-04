@@ -4,6 +4,12 @@ import { HerdrService } from "../application/ports/herdr-service.js";
 import { StateService } from "../application/ports/state-service.js";
 import { runCommand } from "./run-command.js";
 
+const placementArgument = process.argv[2];
+const placement =
+  placementArgument === "tab" || placementArgument === "split"
+    ? placementArgument
+    : undefined;
+
 const program = Effect.fn("openNeonDashboard")(function* () {
   const herdr = yield* HerdrService;
   const state = yield* StateService;
@@ -14,7 +20,7 @@ const program = Effect.fn("openNeonDashboard")(function* () {
       return;
     }
   }
-  const paneId = yield* herdr.openDashboard;
+  const paneId = yield* herdr.openDashboard(placement);
   if (paneId !== undefined) {
     const now = yield* Clock.currentTimeMillis;
     yield* state.saveDashboard({

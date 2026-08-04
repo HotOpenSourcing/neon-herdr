@@ -1,5 +1,6 @@
 import { Clock, Effect } from "effect";
 
+import { OrganizationSelectionRequired } from "../../schemas/errors.js";
 import { displayErrorMessage } from "../../utils/display-error-message.js";
 import { isAuthenticationFailure } from "../../utils/is-authentication-failure.js";
 import { NeonService } from "../ports/neon-service.js";
@@ -56,27 +57,29 @@ const loadProjectsWith = Effect.fn("loadProjectsWith")(function* (
     )
   );
   return yield* live.pipe(
-    Effect.catchAll((failure) =>
-      state.loadProjectCache.pipe(
-        Effect.flatMap((cache) =>
-          cache === undefined
-            ? Effect.fail(failure)
-            : searchProjects(cache.projects, search ?? "").pipe(
-                Effect.map((matches) => ({
-                  projects: matches,
-                  allProjects: cache.projects,
-                  organizations: [],
-                  stale: true,
-                  ...(isAuthenticationFailure(failure)
-                    ? { authenticated: false }
-                    : {}),
-                  warning: displayErrorMessage(
-                    `${displayErrorMessage(failure)} Showing cache from ${cache.cachedAt}.`
-                  ),
-                }))
-              )
+    Effect.catchIf(
+      (failure) => !(failure instanceof OrganizationSelectionRequired),
+      (failure) =>
+        state.loadProjectCache.pipe(
+          Effect.flatMap((cache) =>
+            cache === undefined
+              ? Effect.fail(failure)
+              : searchProjects(cache.projects, search ?? "").pipe(
+                  Effect.map((matches) => ({
+                    projects: matches,
+                    allProjects: cache.projects,
+                    organizations: [],
+                    stale: true,
+                    ...(isAuthenticationFailure(failure)
+                      ? { authenticated: false }
+                      : {}),
+                    warning: displayErrorMessage(
+                      `${displayErrorMessage(failure)} Showing cache from ${cache.cachedAt}.`
+                    ),
+                  }))
+                )
+          )
         )
-      )
     )
   );
 });

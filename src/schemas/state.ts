@@ -14,6 +14,7 @@ const ProjectSummaryStateSchema = Schema.Struct({
 
 export const DashboardStateSchema = Schema.Struct({
   paneId: Schema.optional(Schema.String),
+  orgId: Schema.optional(Schema.String),
   selectedProjectId: Schema.optional(Schema.String),
   selectedBranchId: Schema.optional(Schema.String),
   updatedAt: Schema.optional(Schema.String),

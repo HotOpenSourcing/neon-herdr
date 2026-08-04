@@ -17,6 +17,7 @@ import {
   updateCompute,
 } from "../application/use-cases/compute-actions.js";
 import { copyConnectionString } from "../application/use-cases/copy-connection-string.js";
+import { loadOrganizations } from "../application/use-cases/load-organizations.js";
 import {
   loadProjectDetails,
   refreshProjectDetails,
@@ -25,7 +26,9 @@ import {
   loadProjects,
   refreshProjects,
 } from "../application/use-cases/load-projects.js";
+import { loadSettings } from "../application/use-cases/load-settings.js";
 import { searchProjects } from "../application/use-cases/search-projects.js";
+import { selectOrganization } from "../application/use-cases/select-organization.js";
 import type { DashboardController } from "../types/ui.js";
 
 const loadDashboardState = Effect.fn("loadDashboardState")(function* () {
@@ -46,6 +49,9 @@ export const createDashboardController = (): DashboardController => ({
   loadState: loadDashboardState,
   loadProjects,
   refreshProjects,
+  loadOrganizations,
+  loadSettings,
+  selectOrganization,
   searchProjects,
   loadDetails: loadProjectDetails,
   refreshDetails: refreshProjectDetails,

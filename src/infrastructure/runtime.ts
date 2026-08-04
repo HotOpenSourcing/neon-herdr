@@ -11,13 +11,17 @@ import { StateLive } from "./state/state-live.js";
 const IndependentLayers = Layer.mergeAll(
   ConfigLive,
   ClipboardLive,
-  HerdrLive,
-  NeonCliLive
+  NeonCliLive,
+  HerdrLive.pipe(Layer.provide(ConfigLive))
 );
 
 const AuthLayer = AuthLive.pipe(Layer.provide(IndependentLayers));
 const StateLayer = StateLive.pipe(Layer.provide(IndependentLayers));
-const NeonDependencies = Layer.merge(IndependentLayers, AuthLayer);
+const NeonDependencies = Layer.mergeAll(
+  IndependentLayers,
+  AuthLayer,
+  StateLayer
+);
 const NeonLayer = NeonLive.pipe(Layer.provide(NeonDependencies));
 
 export const AppLayer = Layer.mergeAll(

@@ -10,6 +10,7 @@ import {
   OAUTH_CREDENTIALS_FILE,
   OAUTH_EXPIRY_SKEW_MS,
 } from "../../constants/oauth.js";
+import { AUTHENTICATE_ACTION_ID } from "../../constants/plugin.js";
 import {
   OAuthCredentialsSchema,
   OAuthCurrentUserSchema,
@@ -22,7 +23,11 @@ import type {
 } from "../../types/auth.js";
 import { errorMessage } from "../../utils/error-message.js";
 import { extendOAuthCredentials } from "../../utils/oauth-credentials.js";
+import { herdrActionCommand } from "../../utils/plugin-identity.js";
 import { authorizeWithBrowser, refreshOAuthToken } from "./oauth.js";
+
+const signInAction = () =>
+  `Press a in the dashboard, or run \`${herdrActionCommand(AUTHENTICATE_ACTION_ID)}\`.`;
 
 const isMissingFile = (cause: unknown): boolean =>
   cause instanceof Error && "code" in cause && cause.code === "ENOENT";
@@ -208,8 +213,7 @@ export const AuthLive = Layer.effect(
       if (credentials === undefined) {
         return yield* AuthUnavailableError.make({
           message: "Neon is not connected.",
-          action:
-            "Press a in the dashboard, or run `herdr plugin action invoke neon.herdr.authenticate`.",
+          action: signInAction(),
         });
       }
       const now = yield* Clock.currentTimeMillis;
@@ -219,8 +223,7 @@ export const AuthLive = Layer.effect(
       if (credentials.refresh_token === undefined) {
         return yield* AuthUnavailableError.make({
           message: "The Neon OAuth session expired without a refresh token.",
-          action:
-            "Press a in the dashboard, or run the Neon sign-in action again.",
+          action: signInAction(),
         });
       }
       const token = yield* refreshOAuthToken(

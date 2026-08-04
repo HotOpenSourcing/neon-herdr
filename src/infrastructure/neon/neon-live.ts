@@ -21,7 +21,11 @@ import { Cache, Data, Duration, Effect, Layer, Schedule } from "effect";
 import { AuthService } from "../../application/ports/auth-service.js";
 import { ConfigService } from "../../application/ports/config-service.js";
 import { NeonService } from "../../application/ports/neon-service.js";
-import { NeonRequestError } from "../../schemas/errors.js";
+import { StateService } from "../../application/ports/state-service.js";
+import {
+  NeonRequestError,
+  OrganizationSelectionRequired,
+} from "../../schemas/errors.js";
 import type {
   BranchSummary,
   ComputeSummary,
@@ -153,6 +157,12 @@ const mapNeonError = (error: NeonError): NeonRequestError => {
   });
 };
 
+const ORGANIZATION_REQUIRED_PATTERN = /org_id is required/i;
+
+const requiresOrganization = (error: unknown): error is NeonRequestError =>
+  error instanceof NeonRequestError &&
+  ORGANIZATION_REQUIRED_PATTERN.test(error.message);
+
 const unexpectedNeonError = (cause: unknown): NeonRequestError =>
   NeonRequestError.make({
     category: "unknown",
@@ -273,15 +283,31 @@ export const NeonLive = Layer.effect(
   Effect.gen(function* () {
     const auth = yield* AuthService;
     const configService = yield* ConfigService;
+    const stateService = yield* StateService;
 
-    const makeClient = Effect.fn("Neon.makeClient")(function* () {
+    const resolveOrgId = Effect.fn("Neon.resolveOrgId")(function* (
+      configuredOrgId?: string
+    ) {
+      if (configuredOrgId !== undefined) {
+        return configuredOrgId;
+      }
+      const saved = yield* stateService.loadDashboard.pipe(
+        Effect.catchAll(() => Effect.succeed(undefined))
+      );
+      return saved?.orgId;
+    });
+
+    const makeClient = Effect.fn("Neon.makeClient")(function* (
+      orgIdOverride?: string
+    ) {
       const credentials = yield* auth.resolve;
       const config = yield* configService.load;
+      const orgId = orgIdOverride ?? (yield* resolveOrgId(config.orgId));
       const client = createNeonClient({
         apiKey: credentials.accessToken,
         retries: 0,
         waitForReadiness: false,
-        ...(config.orgId === undefined ? {} : { orgId: config.orgId }),
+        ...(orgId === undefined ? {} : { orgId }),
       });
       return { client, config };
     });
@@ -294,15 +320,49 @@ export const NeonLive = Layer.effect(
       return organizations.map(mapOrganization);
     });
 
-    const loadProjects = Effect.fn("Neon.loadProjects")(function* () {
-      const { client, config } = yield* makeClient();
-      const query = {
-        limit: config.pageSize,
-      };
+    const listProjectsWith = Effect.fn("Neon.listProjectsWith")(function* (
+      orgId?: string
+    ) {
+      const { client, config } = yield* makeClient(orgId);
       const projects = yield* retryRead(
-        fromNeonResult(() => client.projects.list(query).all())
+        fromNeonResult(() =>
+          client.projects.list({ limit: config.pageSize }).all()
+        )
       );
       return projects.map(mapProject);
+    });
+
+    const recoverWithOrganization = Effect.fn("Neon.recoverWithOrganization")(
+      function* (failure: NeonRequestError) {
+        const organizations = yield* loadOrganizations().pipe(
+          Effect.catchAll(() => Effect.succeed([]))
+        );
+        const only = organizations.length === 1 ? organizations[0] : undefined;
+        if (only !== undefined) {
+          return yield* listProjectsWith(only.id);
+        }
+        if (organizations.length === 0) {
+          return yield* Effect.fail(failure);
+        }
+        return yield* Effect.fail(
+          OrganizationSelectionRequired.make({
+            message: `This Neon account has ${organizations.length} organizations.`,
+            action: "Choose the one to show projects for.",
+            organizations,
+          })
+        );
+      }
+    );
+
+    const loadProjects = Effect.fn("Neon.loadProjects")(function* () {
+      const config = yield* configService.load;
+      const orgId = yield* resolveOrgId(config.orgId);
+      if (orgId !== undefined) {
+        return yield* listProjectsWith(orgId);
+      }
+      return yield* listProjectsWith().pipe(
+        Effect.catchIf(requiresOrganization, recoverWithOrganization)
+      );
     });
 
     const loadProjectDetails = Effect.fn("Neon.loadProjectDetails")(function* (

@@ -55,6 +55,7 @@ export const NeonErrorCategorySchema = Schema.Literal(
   "not_found",
   "operation",
   "timeout",
+  "config",
   "unknown"
 );
 
@@ -66,6 +67,21 @@ export class NeonRequestError extends Schema.TaggedError<NeonRequestError>(
   action: Schema.String,
   retryable: Schema.Boolean,
   retryAfterMs: Schema.optional(Schema.Number),
+}) {}
+
+const OrganizationChoiceSchema = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  handle: Schema.String,
+  plan: Schema.String,
+});
+
+export class OrganizationSelectionRequired extends Schema.TaggedError<OrganizationSelectionRequired>(
+  "OrganizationSelectionRequired"
+)("OrganizationSelectionRequired", {
+  message: Schema.String,
+  action: Schema.String,
+  organizations: Schema.Array(OrganizationChoiceSchema),
 }) {}
 
 export class HerdrCommandError extends Schema.TaggedError<HerdrCommandError>(

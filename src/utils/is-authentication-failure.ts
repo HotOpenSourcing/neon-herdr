@@ -9,3 +9,6 @@ export const isAuthenticationFailure = (error: ApplicationError): boolean =>
   error instanceof AuthUnavailableError ||
   error instanceof OAuthError ||
   (error instanceof NeonRequestError && error.category === "auth");
+
+export const impliesAuthenticated = (error: ApplicationError): boolean =>
+  error instanceof NeonRequestError && error.category !== "auth";
