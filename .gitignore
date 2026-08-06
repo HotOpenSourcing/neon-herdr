@@ -1,8 +1,8 @@
 node_modules/
 dist/
-.env
 .repos/effect
 .repos/neon-pkgs
 .DS_Store
 *.log
 .repos/
+config.bat

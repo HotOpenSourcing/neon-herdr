@@ -1,6 +1,6 @@
 # Neon for Herdr
 
-Neon for Herdr is a terminal dashboard for managing Neon projects without leaving a Herdr workspace. It uses the official [`@neon/sdk`](https://www.npmjs.com/package/@neon/sdk), Ink, and Effect.
+Neon for [Herdr](https://herdr.dev/) is a terminal dashboard for managing Neon projects without leaving a Herdr workspace. It uses the official [`@neon/sdk`](https://www.npmjs.com/package/@neon/sdk), Ink, and Effect.
 
 The dashboard supports:
 

@@ -5,7 +5,7 @@
   "description": "Manage Neon projects and branches from a Herdr dashboard pane.",
   "type": "module",
   "scripts": {
-    "build": "tsup",
+    "build": "node init && tsup",
     "check": "ultracite check && pnpm typecheck && pnpm build",
     "clean": "node --run clean:dist",
     "clean:dist": "rm -rf dist",
@@ -16,8 +16,10 @@
   },
   "dependencies": {
     "@neon/sdk": "1.4.0",
+    "dotenv": "^8.2.0",
     "effect": "3.22.1",
     "ink": "6.8.0",
+    "node-fetch": "^3.3.2",
     "open": "10.2.0",
     "openid-client": "6.8.1",
     "react": "19.2.8"
